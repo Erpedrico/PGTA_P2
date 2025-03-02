@@ -120,7 +120,3 @@ tabla.bind("<ButtonRelease-1>", on_row_select)
 
 # Iniciar la aplicación
 root.mainloop()
-<<<<<<< HEAD
-=======
-
->>>>>>> 740fa72e476ef01c64684121bfb764f3166eb65b

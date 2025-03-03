@@ -1,0 +1,33 @@
+uap_mapping = {
+        1: {"name": "Data Source Identifier", "length": 2},
+        2: {"name": "Time-of-Day", "length": 3},
+        3: {"name": "Target Report Descriptor", "length": "1+"},
+        4: {"name": "Measured Position in Slant Polar Coordinates", "length": 4},
+        5: {"name": "Mode-3/A Code in Octal Representation", "length": 2},
+        6: {"name": "Flight Level in Binary Representation", "length": 2},
+        7: {"name": "Radar Plot Characteristics", "length": "1+"},
+        8: {"name": "Aircraft Address", "length": 3},
+        9: {"name": "Aircraft Identification", "length": 6},
+        10: {"name": "Mode S MB Data", "length": "1+8*n"},
+        11: {"name": "Track Number", "length": 2},
+        12: {"name": "Calculated Position in Cartesian Coordinates", "length": 4},
+        13: {"name": "Calculated Track Velocity in Polar Representation", "length": 4},
+        14: {"name": "Track Status", "length": "1+"},
+        15: {"name": "Track Quality", "length": 4},
+        16: {"name": "Warning/Error Conditions/Target Classification", "length": "1+"},
+        17: {"name": "Mode-3/A Code Confidence Indicator", "length": 2},
+        18: {"name": "Mode-C Code and Confidence Indicator", "length": 4},
+        19: {"name": "Height Measured by 3D Radar", "length": 2},
+        20: {"name": "Radial Doppler Speed", "length": "1+"},
+        21: {"name": "Communications / ACAS Capability and Flight Status", "length": 2},
+        22: {"name": "ACAS Resolution Advisory Report", "length": 7},
+        23: {"name": "Mode-1 Code in Octal Representation", "length": 1},
+        24: {"name": "Mode-2 Code in Octal Representation", "length": 2},
+        25: {"name": "Mode-1 Code Confidence Indicator", "length": 1},
+        26: {"name": "Mode-2 Code Confidence Indicator", "length": 2},
+        27: {"name": "Special Purpose Field", "length": "1+"},
+        28: {"name": "Reserved Expansion Field", "length": "1+"},
+        
+    }
+
+   

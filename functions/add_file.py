@@ -1,8 +1,8 @@
 import struct
 from tkinter import filedialog, messagebox
-from functions.extract_packets import parse_binary_file  # Asegúrate de que la importación es correcta
+from functions.extract_packets import parse_binary_file 
 
-def add_file(tabla):  # <-- Ahora recibe la tabla como argumento
+def add_file(tabla): 
     file_path = filedialog.askopenfilename(filetypes=[("Archivos binarios", "*.ast"), ("Todos los archivos", "*.*")])
     if not file_path:
         return

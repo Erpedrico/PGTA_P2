@@ -1,5 +1,7 @@
 # Todas las funciones de data item deben devolver un vector de longitud variable. (de momento)
 
 def data_item_1(datos):
+    res[]
     dpwjdew
-    return 
+    res.append(1)
+    return res

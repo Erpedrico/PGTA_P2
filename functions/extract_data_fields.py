@@ -19,7 +19,7 @@ def extract_data_fields(packet):
         print(f"Error al convertir el paquete hexadecimal: {e}")
         return
 
-    # Paso 1: Saltar los dos primeros octetos
+    # Paso 1: Saltar los tres primeros octetos
     packet_bytes = packet_bytes[3:]
 
     # Paso 2: Leer el primer octeto

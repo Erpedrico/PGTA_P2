@@ -1,3 +1,4 @@
+#Lo puedo mejorar con la librería bitstring
 def data_item_2(packet):
     
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
@@ -45,7 +46,7 @@ def data_item_2(packet):
 
     
     octet_index =1
-    # Procesar extensiones FX (octetos adicionales) PREGUNTAR
+    # Procesar extensiones FX (octetos adicionales) 
     while FX == 1 and octet_index < len(packet_bytes):  
             current_octet = packet_bytes[octet_index]
             if octet_index ==1:
@@ -73,27 +74,12 @@ def data_item_2(packet):
                 TargetReportDescriptor.append("X-Pulse present" if XPP else "No X-Pulse present")
                 TargetReportDescriptor.append("Military emergency" if ME else "No military emergency")
                 TargetReportDescriptor.append("Military identification" if MI else "No military identification")
-
                 TargetReportDescriptor.append(FOE_FRI_mapping.get(FOE_FRI, "Unknown FOE/FRI value"))
-
-
                 TargetReportDescriptor.append("Extension into next extent" if FX_ext else "End of Data Item")
+                
                 FX=FX_ext
-
-                # Nota sobre FOE/FRI
-                if FOE_FRI == 0:
-                    print("Detailed response information is in M4E of the Reserved Expansion Field.")
-
-                # Nota sobre XPP
-                if XPP == 1:
-                    print("X-pulse has been extracted.")
-
-                # Nota sobre ERR
-                if ERR == 1:
-                    print("Target range is beyond the maximum range in I048/040. The ERR Data Item in the Reserved Expansion Field provides the range value.")
                 
-                
-            
+                       
             else:
                 # Extraer bits específicos del tercer octeto
                 ADSB = (current_octet >> 7) & 0b1    # bit 8
@@ -112,10 +98,6 @@ def data_item_2(packet):
             # Incrementar el índice para procesar el siguiente octeto
             octet_index += 1   
                 
-                
-            
-                      
-
         
     return TargetReportDescriptor
 

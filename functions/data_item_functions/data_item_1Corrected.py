@@ -1,11 +1,14 @@
 # Todas las funciones de data item deben devolver un vector de longitud variable. (de momento)
-
 def data_item_1(packet):
+    
+    # Limpiar el paquete (eliminar caracteres no válidos)
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
+    
     # Verificar si la cadena limpia tiene una longitud par
     if len(cleaned_packet) % 2 != 0:
         print(f"Error: La cadena hexadecimal tiene longitud impar: {cleaned_packet}")
         return
+    
     # Convertir la cadena hexadecimal limpia a bytes
     try:
         packet_bytes = bytes.fromhex(cleaned_packet)  # Convierte la cadena hexadecimal a bytes

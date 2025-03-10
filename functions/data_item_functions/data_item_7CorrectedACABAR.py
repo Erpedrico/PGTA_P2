@@ -96,4 +96,5 @@ def data_item_13(packet):
         FX = current_octet & 0b1  # Verificar si hay más extensiones
 
     return radar_plot
-#preguntar lo del complemento a2 y lo del fx
+#preguntar lo del complemento A2 (acabar esto!)
+

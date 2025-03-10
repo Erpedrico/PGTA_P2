@@ -22,8 +22,10 @@ from functions.data_item_functions.data_item_11 import data_item_11
 from functions.data_item_functions.data_item_12 import data_item_12
 from functions.data_item_functions.data_item_13 import data_item_13
 from functions.data_item_functions.data_item_14 import data_item_14
-
-
+from functions.data_item_functions.data_item_8Correcto import data_item_8Correcto
+from functions.data_item_functions.data_item_200 import data_item_200
+from functions.data_item_functions.data_item_170 import data_item_170
+"""
 
 
 
@@ -80,6 +82,13 @@ for entry in sigma:
     print(entry)
 print("\n") 
 
+hexnumber_8="ABCDEF"
+print("Prueba_8Correcto")
+sigma = data_item_8Correcto(hexnumber_8)
+for entry in sigma:
+    print(entry)
+print("\n") 
+
 hexnumber_9="1F"
 print("Prueba_9")
 sigma = data_item_9(hexnumber_9)
@@ -110,11 +119,35 @@ for entry in sigma:
     print(entry)
 print("\n") 
 
+
 hexnumber_14="123456"
 print("Prueba_14")
 sigma = data_item_14(hexnumber_14)
 for entry in sigma:
     print(entry)
+
+
+hexnumber_9="3452ABC61192"
+print("Prueba_9")
+sigma = data_item_9(hexnumber_9)
+for entry in sigma:
+    print(entry)
+
+hexnumber_200="12345678"
+print("Prueba_200")
+sigma = data_item_200(hexnumber_200)
+for entry in sigma:
+    print(entry)
+print("\n")   
+"""
+hexnumber_170="A5B2"
+print("Prueba_170")
+sigma = data_item_170(hexnumber_170)
+for entry in sigma:
+    print(entry)
+print("\n")   
+
+"""""
 
 hexnumber_6="1A2B"
 print("Prueba_6")
@@ -202,4 +235,5 @@ messages = data_item_26(hexnumber_26)
 for entry in messages:
     print(entry)
 print (messages)
-print("\n") 
+print("\n") """
+

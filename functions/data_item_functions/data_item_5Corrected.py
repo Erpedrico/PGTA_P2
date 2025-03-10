@@ -1,14 +1,16 @@
 def data_item_10(packet):
-# Verificar la longitud del paquete
-    if len(packet) != 4:  # 2 octetos = 4 caracteres hexadecimales
-        print(f"Error: El paquete debe tener 2 octetos (4 caracteres hexadecimales). Longitud actual: {len(packet)}")
-        return None
 
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
+
     # Verificar si la cadena limpia tiene una longitud par
     if len(cleaned_packet) % 2 != 0:
         print(f"Error: La cadena hexadecimal tiene longitud impar: {cleaned_packet}")
         return
+    
+    # Verificar la longitud del paquete
+    if len(packet) != 4:  # 2 octetos = 4 caracteres hexadecimales
+        print(f"Error: El paquete debe tener 2 octetos (4 caracteres hexadecimales). Longitud actual: {len(packet)}")
+        return None
     
     # Convertir la cadena hexadecimal limpia a bytes
     try:

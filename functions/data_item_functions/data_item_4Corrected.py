@@ -5,11 +5,14 @@ def data_item_4(packet):
     if len(packet) != 8:  # 4 octetos = 8 caracteres hexadecimales
         print(f"Error: El paquete debe tener 4 octetos (8 caracteres hexadecimales). Longitud actual: {len(packet)}")
         return None
+    
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
+
     # Verificar si la cadena limpia tiene una longitud par
     if len(cleaned_packet) % 2 != 0:
         print(f"Error: La cadena hexadecimal tiene longitud impar: {cleaned_packet}")
         return
+    
     # Convertir la cadena hexadecimal limpia a bytes
     try:
         packet_bytes = bytes.fromhex(cleaned_packet)  # Convierte la cadena hexadecimal a bytes
@@ -27,7 +30,7 @@ def data_item_4(packet):
     theta = int.from_bytes(theta_bytes, byteorder='big')  # Convertir a entero
     theta_deg = theta * (360.0 / 65536)  # Convertir a grados (360° / 2^16)
 
-    # Verificar si RHO está en rango extendido PREGUNTAR
+    # Verificar si RHO está en rango extendido 
     if rho_nm >= 256:  # RHO >= 256 NM
         print("Advertencia: RHO está en rango extendido. Se debe enviar el ítem 'Extended Range Report'.")
 

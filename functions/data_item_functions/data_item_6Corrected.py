@@ -1,16 +1,19 @@
 def data_item_12(packet):
-    # Verificar la longitud del paquete
-    if len(packet) != 4:  # 2 octetos = 4 caracteres hexadecimales
-        print(f"Error: El paquete debe tener 2 octetos (4 caracteres hexadecimales). Longitud actual: {len(packet)}")
-        return None
 
     # Limpiar el paquete (eliminar caracteres no válidos)
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
-    
-    # Verificar si la cadena limpia tiene una longitud par
+
+
+     # Verificar si la cadena limpia tiene una longitud par
     if len(cleaned_packet) % 2 != 0:
         print(f"Error: La cadena hexadecimal tiene longitud impar: {cleaned_packet}")
         return None
+
+    # Verificar la longitud del paquete
+    if len(cleaned_packet) != 4:  # 2 octetos = 4 caracteres hexadecimales
+        print(f"Error: El paquete debe tener 2 octetos (4 caracteres hexadecimales). Longitud actual: {len(packet)}")
+        return None
+      
     
     # Convertir la cadena hexadecimal limpia a bytes
     try:
@@ -30,30 +33,14 @@ def data_item_12(packet):
     # Calcular el nivel de vuelo en unidades de 1/4 de FL
     flight_level_value = flight_level * 0.25  # Convertir a Flight Level (FL)
 
-    # Nota 3: Verificar si el valor del nivel de vuelo está dentro del rango permitido por ICAO Annex 10
+    # Nota 3: Verificar si el valor del nivel de vuelo está dentro del rango permitido por ICAO Annex 10 (esto no se si hace falta)
     if flight_level_value < -12 or flight_level_value > 1267.75:
         print(f"Advertencia: El valor del nivel de vuelo ({flight_level_value} FL) está fuera del rango permitido por ICAO Annex 10.")
 
-    # Nota 1: Verificar si el código de altitud no es decodificable
-    if flight_level_value == 0 and V == 1:  # Si el nivel de vuelo es 0 y no está validado
-        print("Advertencia: Código de altitud (Mode C / Mode S) no decodificable. Enviar advertencia en I048/030.")
-        return None
-
-    # Nota 2: Verificar si el valor del nivel de vuelo es anormal en comparación con el anterior
-    """ if previous_flight_level is not None:
-        variation = abs(flight_level_value - previous_flight_level)
-        if variation > track_variation_threshold:
-            print(f"Advertencia: Variación anormal en el nivel de vuelo ({variation} FL). Enviar advertencia en I048/030.")
-            return None"""
-
-    # Nota 4: Interpretar el bit G para Mode S (error correction attempted)
-    if G == 1:
-        print("Advertencia: Se ha intentado una corrección de errores (bit G = 1).")
-    
     # Devolver la información del nivel de vuelo
     Validated="Yes" if V == 0 else "No"
     Garbled="Yes" if G == 1 else "No"
-    FlightLevel=f"{flight_level_value} FL"
+    FlightLevel=f"{flight_level_value}"
     
     return [Validated, Garbled, FlightLevel]
         

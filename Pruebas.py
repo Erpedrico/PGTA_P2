@@ -8,6 +8,122 @@ from functions.data_item_functions.data_item_23 import data_item_23
 from functions.data_item_functions.data_item_24 import data_item_24
 from functions.data_item_functions.data_item_25 import data_item_25
 from functions.data_item_functions.data_item_26 import data_item_26
+from functions.data_item_functions.data_item_1 import data_item_1
+from functions.data_item_functions.data_item_2 import data_item_2
+from functions.data_item_functions.data_item_3 import data_item_3
+from functions.data_item_functions.data_item_4 import data_item_4
+from functions.data_item_functions.data_item_5 import data_item_5
+from functions.data_item_functions.data_item_6 import data_item_6
+from functions.data_item_functions.data_item_7 import data_item_7
+from functions.data_item_functions.data_item_8 import data_item_8
+from functions.data_item_functions.data_item_9 import data_item_9
+from functions.data_item_functions.data_item_10 import data_item_10
+from functions.data_item_functions.data_item_11 import data_item_11
+from functions.data_item_functions.data_item_12 import data_item_12
+from functions.data_item_functions.data_item_13 import data_item_13
+from functions.data_item_functions.data_item_14 import data_item_14
+
+
+
+
+
+hexnumber_1="A1D2"
+print("Prueba_1")
+sigma = data_item_1(hexnumber_1)
+for entry in sigma:
+    print(entry)
+print("\n")  
+
+hexnumber_2="A2D3"
+print("Prueba_2 EXT")
+sigma = data_item_2(hexnumber_2)
+for entry in sigma:
+    print(entry)
+print("\n")  
+
+hexnumber_3="210F"
+print("Prueba_3 EXT")
+sigma = data_item_3(hexnumber_3)
+for entry in sigma:
+    print(entry)
+print("\n")
+
+
+hexnumber_4="01000000"
+print("Prueba_4")
+sigma = data_item_4(hexnumber_4)
+for entry in sigma:
+    print(entry)
+print("\n") 
+
+
+
+hexnumber_5="0080FF80"
+print("Prueba_5")
+sigma = data_item_5(hexnumber_5)
+for entry in sigma:
+    print(entry)
+print("\n")  
+
+hexnumber_6="600F"
+print("Prueba_6")
+sigma = data_item_6(hexnumber_6)
+for entry in sigma:
+    print(entry)
+print("\n") 
+
+
+hexnumber_7="A5"
+print("Prueba_7")
+sigma = data_item_7(hexnumber_7)
+for entry in sigma:
+    print(entry)
+print("\n") 
+
+hexnumber_9="1F"
+print("Prueba_9")
+sigma = data_item_9(hexnumber_9)
+for entry in sigma:
+    print(entry)
+print("\n") 
+
+hexnumber_10="600F"
+print("Prueba_10")
+sigma = data_item_10(hexnumber_10)
+for entry in sigma:
+    print(entry)
+print("\n") 
+
+
+hexnumber_12="8E23"
+print("Prueba_12")
+sigma = data_item_12(hexnumber_12)
+for entry in sigma:
+    print(entry)
+print("\n") 
+
+
+hexnumber_13="A512345678"
+print("Prueba_13")
+sigma = data_item_13(hexnumber_13)
+for entry in sigma:
+    print(entry)
+print("\n") 
+
+hexnumber_14="123456"
+print("Prueba_14")
+sigma = data_item_14(hexnumber_14)
+for entry in sigma:
+    print(entry)
+
+hexnumber_6="1A2B"
+print("Prueba_6")
+sigma = data_item_6(hexnumber_6)
+for entry in sigma:
+    print(entry)
+print("\n") 
+
+
 
 hexnumber_15 = str(11111111)
 print("Prueba_15")

@@ -34,6 +34,7 @@ print("\n")
 
 # PREGUNTAR EL 18 SI HAY QUE ESPECIFICAR LOS CODIGOS Y INTENTAR ENTENDER LA ESTRUCTURA
 
+
 hexnumber_19 = "1111"
 print("Prueba_19")
 height_3D = data_item_19(hexnumber_19)

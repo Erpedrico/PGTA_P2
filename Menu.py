@@ -6,6 +6,7 @@ import webview
 from functions.add_file import add_file
 from functions.filter import filter_data
 from functions.extract_data_fields import extract_data_fields
+from functions.extract_data import extraer_datos
 
 # Crear la ventana principal
 root = tk.Tk()
@@ -77,46 +78,70 @@ btn_archivo.grid(row=0, column=1, padx=10, pady=5, sticky="ew")
 btn_filtrar.grid(row=0, column=2, padx=10, pady=5, sticky="ew")
 btn_mapa_webview.grid(row=0, column=3, padx=10, pady=5, sticky="ew")
 
-# --------------------- Tabla para mostrar paquetes ---------------------
+# --------------------- Lista de columnas ---------------------
+columnas_datos = [
+    "NUM", "SAC", "SIC", "TIME", "TIME(s)", "LAT", "LON", "H", "TYP_020", "SIM_020", "RDP_020", "SPI_020", "RAB_020",
+    "TST_020", "ERR_020", "XPP_020", "ME_020", "MI_020", "FOE_FRI_020", "RHO", "THETA", "V_070", "G_070", "MODE 3/A",
+    "V_090", "G_090", "FL", "MODE C corrected", "SRL_130", "SSR_130", "SAM_130", "PRL_130", "PAM_130", "RPD_130",
+    "APD_130", "TA", "TI", "MCP_ALT", "FMS_ALT", "BP", "VNAV", "ALT_HOLD", "APP", "TARGET_ALT_SOURCE", "RA", "TTA",
+    "GS", "TAR", "TAS", "HDG", "IAS", "MACH", "BAR", "IVV", "TN", "X", "Y", "GS_KT", "HEADING", "CNF_170", "RAD_170",
+    "DOU_170", "MAH_170", "CDM_170", "TRE_170", "GHO_170", "SUP_170", "TCC_170", "HEIGHT", "COM_230", "STAT_230",
+    "SI_230", "MSCC_230", "ARC_230", "AIC_230", "B1A_230", "B1B_230"
+]
+
+# ⚠️ AÑADIMOS columna "Hex (Raw)" justo después de LEN
+columnas_tabla = ["Paquete", "CAT", "LEN", "Hex (Raw)"] + columnas_datos
+
+# --------------------- GUI Tabla ---------------------
 frame_tabla = tk.Frame(root)
 frame_tabla.pack(pady=20, fill="both", expand=True, padx=20)
 
-# Crear tabla con Treeview
-tabla = ttk.Treeview(frame_tabla, columns=("Paquete", "CAT", "LEN", "Datos"), show="headings")
-tabla.heading("Paquete", text="N°")
-tabla.heading("CAT", text="Categoría")
-tabla.heading("LEN", text="Longitud")
-tabla.heading("Datos", text="Datos (Hex)")
+scroll_x = tk.Scrollbar(frame_tabla, orient="horizontal")
+scroll_y = tk.Scrollbar(frame_tabla, orient="vertical")
 
-# Definir tamaños de columnas
-tabla.column("Paquete", width=60, anchor="center")
-tabla.column("CAT", width=80, anchor="center")
-tabla.column("LEN", width=80, anchor="center")
-tabla.column("Datos", width=400, anchor="w")
+tabla = ttk.Treeview(
+    frame_tabla,
+    columns=columnas_tabla,
+    show="headings",
+    xscrollcommand=scroll_x.set,
+    yscrollcommand=scroll_y.set
+)
 
-# Crear barra de desplazamiento vertical
-scrollbar = tk.Scrollbar(frame_tabla, orient="vertical", command=tabla.yview)
-tabla.configure(yscrollcommand=scrollbar.set)
-scrollbar.pack(side="right", fill="y")
+for col in columnas_tabla:
+    tabla.heading(col, text=col)
+    tabla.column(col, width=100, anchor="center")
+
+scroll_x.config(command=tabla.xview)
+scroll_y.config(command=tabla.yview)
+scroll_x.pack(side="bottom", fill="x")
+scroll_y.pack(side="right", fill="y")
 tabla.pack(side="left", fill="both", expand=True)
 
-# Función para llamar a extract_data_fields cuando se selecciona una fila
+# --------------------- Evento seleccionar fila ---------------------
 def on_row_select(event):
-    # Obtener el ID de la fila seleccionada
     selected_item = tabla.selection()
-    if not selected_item:
-        return  # No hacer nada si no hay fila seleccionada
-    
-    # Obtener los valores de la fila seleccionada
-    item_values = tabla.item(selected_item[0])['values']
-    
-    # Verificar que la fila tenga al menos 4 columnas
-    if len(item_values) >= 4:
-        # Llamar a la función extract_data_fields con los datos de la cuarta columna
-        extract_data_fields(item_values[3])
+    if selected_item:
+        item_values = tabla.item(selected_item[0])['values']
+        print("Fila seleccionada:", item_values)
 
-# Asociar la función al evento de seleccionar una fila
 tabla.bind("<ButtonRelease-1>", on_row_select)
 
-# Iniciar la aplicación
+# --------------------- Modificación de la función de agregar paquete ---------------------
+def agregar_paquete(paquete_num, cat, length, datos_hex):
+    # Ya no usamos extraer_datos, ya que la función add_file ya extrae todos los datos
+    fila = [paquete_num, cat, length, datos_hex] + [datos_hex]  # datos_extraidos ya no es necesario aquí
+
+    # Verificación para asegurarnos de que la fila contiene la cantidad correcta de columnas
+    if len(fila) != len(columnas_tabla):
+        print("❌ Error: cantidad de columnas no coincide.")
+        print("Esperado:", len(columnas_tabla), "| Obtenido:", len(fila))
+        return
+
+    tabla.insert("", "end", values=fila)
+
+# --------------------- Dummy extraer_datos ---------------------
+def extraer_datos(datos_hex):
+    return {col: "Not Found" for col in columnas_datos}
+
+print("Lanzando interfaz...")
 root.mainloop()

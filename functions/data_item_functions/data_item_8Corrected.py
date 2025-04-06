@@ -1,4 +1,4 @@
-def data_item_8Correcto(packet):
+def data_item_8(packet):
 
     # Limpiar el paquete (eliminar caracteres no válidos)
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")

@@ -1,4 +1,4 @@
-def data_item_10(packet):
+def data_item_5(packet):
 
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
 

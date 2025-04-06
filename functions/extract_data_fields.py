@@ -49,38 +49,6 @@ def extract_data_fields(packet):
     # Imprimir resultados (mostrar los bits en los que encontramos 1)
     for entry in data_fields:
         print(entry)
-    '''
-    packet_bytes = packet_bytes[len(bits_to_check):]  # Saltar FSPEC
-    index = 0  # Reiniciar index después de FSPEC
-       
-    #Extraer FRNs activos
-    frns_present = []
-    for octet_index, octet in enumerate(bits_to_check):
-        for bit_index in range(7, -1, -1):  # Recorremos de izquierda a derecha
-            bit = (octet >> bit_index) & 1
-            if bit == 1:
-                frn = (octet_index * 8) + (7 - bit_index) + 1  # Calcular el FRN
-                frns_present.append(frn)
-    
-    #Extraer los data item según los FRNs activos (ejemplo CAT48)
-    for frn in frns_present:
-        if frn in uap_mapping:
-            data_item = uap_mapping[frn]
-            name = data_item["name"]
-            length = data_item["length"]
-
-            # Si la longitud en octetos es fija
-            if isinstance(length, int):
-                data = packet_bytes[index:index + length]
-                index += length
-                data_items.append(f"FRN {frn}: {name} (Longitud: {length} octetos) - Datos: {data.hex()}")
-            else:
-                # Si la longitud en octetos es variable, (esto hay que desarollarlo más, tengo duda de qué significa cada valor de longitud en octetos y si tiene relación con el data filed)
-                data_items.append(f"FRN {frn}: {name} (Longitud: {length}) - Datos variables")
-        else:
-            data_items.append(f"FRN {frn}: Desconocido")
-    '''
-    
 
     # Combinar todas las entradas en una sola cadena
     result_message = "\n".join(data_fields)

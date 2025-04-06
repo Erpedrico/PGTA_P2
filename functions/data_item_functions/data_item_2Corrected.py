@@ -1,4 +1,4 @@
-def data_item_14(packet):
+def data_item_2(packet):
     # Verificar la longitud del paquete
     if len(packet) != 6:  # 3 octetos = 6 caracteres hexadecimales
         print(f"Error: El paquete debe tener 3 octetos (6 caracteres hexadecimales). Longitud actual: {len(packet)}")

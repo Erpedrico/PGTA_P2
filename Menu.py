@@ -80,13 +80,7 @@ btn_mapa_webview.grid(row=0, column=3, padx=10, pady=5, sticky="ew")
 
 # --------------------- Lista de columnas ---------------------
 columnas_datos = [
-    "NUM", "SAC", "SIC", "TIME", "TIME(s)", "LAT", "LON", "H", "TYP_020", "SIM_020", "RDP_020", "SPI_020", "RAB_020",
-    "TST_020", "ERR_020", "XPP_020", "ME_020", "MI_020", "FOE_FRI_020", "RHO", "THETA", "V_070", "G_070", "MODE 3/A",
-    "V_090", "G_090", "FL", "MODE C corrected", "SRL_130", "SSR_130", "SAM_130", "PRL_130", "PAM_130", "RPD_130",
-    "APD_130", "TA", "TI", "MCP_ALT", "FMS_ALT", "BP", "VNAV", "ALT_HOLD", "APP", "TARGET_ALT_SOURCE", "RA", "TTA",
-    "GS", "TAR", "TAS", "HDG", "IAS", "MACH", "BAR", "IVV", "TN", "X", "Y", "GS_KT", "HEADING", "CNF_170", "RAD_170",
-    "DOU_170", "MAH_170", "CDM_170", "TRE_170", "GHO_170", "SUP_170", "TCC_170", "HEIGHT", "COM_230", "STAT_230",
-    "SI_230", "MSCC_230", "ARC_230", "AIC_230", "B1A_230", "B1B_230"
+    "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description", "Validated", "Garbled", "CodeSource", "Mode3ACode", "Validated_FL", "Garbled_FL", "FL", "Address", "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING","LAT", "LON", "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A","B1B", "RHO", "THETA"
 ]
 
 # ⚠️ AÑADIMOS columna "Hex (Raw)" justo después de LEN
@@ -118,26 +112,23 @@ scroll_y.pack(side="right", fill="y")
 tabla.pack(side="left", fill="both", expand=True)
 
 # --------------------- Evento seleccionar fila ---------------------
+# Función para llamar a extract_data_fields cuando se selecciona una fila
 def on_row_select(event):
+    # Obtener el ID de la fila seleccionada
     selected_item = tabla.selection()
-    if selected_item:
-        item_values = tabla.item(selected_item[0])['values']
-        print("Fila seleccionada:", item_values)
+    if not selected_item:
+        return  # No hacer nada si no hay fila seleccionada
+    
+    # Obtener los valores de la fila seleccionada
+    item_values = tabla.item(selected_item[0])['values']
+    
+    # Verificar que la fila tenga al menos 4 columnas
+    if len(item_values) >= 4:
+        # Llamar a la función extract_data_fields con los datos de la cuarta columna
+        extract_data_fields(item_values[3])
 
+# Asociar la función al evento de seleccionar una fila
 tabla.bind("<ButtonRelease-1>", on_row_select)
-
-# --------------------- Modificación de la función de agregar paquete ---------------------
-def agregar_paquete(paquete_num, cat, length, datos_hex):
-    # Ya no usamos extraer_datos, ya que la función add_file ya extrae todos los datos
-    fila = [paquete_num, cat, length, datos_hex] + [datos_hex]  # datos_extraidos ya no es necesario aquí
-
-    # Verificación para asegurarnos de que la fila contiene la cantidad correcta de columnas
-    if len(fila) != len(columnas_tabla):
-        print("❌ Error: cantidad de columnas no coincide.")
-        print("Esperado:", len(columnas_tabla), "| Obtenido:", len(fila))
-        return
-
-    tabla.insert("", "end", values=fila)
 
 # --------------------- Dummy extraer_datos ---------------------
 def extraer_datos(datos_hex):

@@ -1,6 +1,6 @@
 from bitstring import BitArray  # Importar la librería bitstring
 
-def data_item_170(packet):
+def data_item_14(packet):
     # Limpiar la cadena hexadecimal: eliminar espacios y caracteres no válidos
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
 

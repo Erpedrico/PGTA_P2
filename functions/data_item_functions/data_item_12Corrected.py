@@ -1,7 +1,8 @@
 # Todas las funciones de data item deben devolver un vector de longitud variable. (de momento)
-def data_item_5(packet):
+def data_item_12(packet):
 
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
+    print(packet)
     # Verificar si la cadena limpia tiene una longitud par
     if len(cleaned_packet) % 2 != 0:
         print(f"Error: La cadena hexadecimal tiene longitud impar: {cleaned_packet}")

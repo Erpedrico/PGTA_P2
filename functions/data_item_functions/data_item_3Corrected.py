@@ -1,5 +1,5 @@
 #Lo puedo mejorar con la librería bitstring
-def data_item_2(packet):
+def data_item_3(packet):
     
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
     # Verificar si la cadena limpia tiene una longitud par

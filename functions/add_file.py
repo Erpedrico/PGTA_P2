@@ -25,12 +25,14 @@ def add_file(tabla):
             cat = packet[0]  # Primer byte = Categoría
             length = int.from_bytes(packet[1:3], byteorder='big')  # Longitud del paquete (bytes 1-2)
             datos_hex = packet.hex()[:50] + "..." if len(packet) > 25 else packet.hex()  # Recortar datos largos
+            all_datos_hex = packet.hex()
+
 
             # Tomamos el resto de los datos después del índice 3 (de acuerdo con las nuevas columnas)
             packet_data = packet[3:]  # El resto de los datos que queremos extraer
 
             # Convertimos el paquete a hexadecimal y lo procesamos
-            datos_extraidos = extraer_datos(bytes(packet_data))
+            datos_extraidos = extraer_datos(all_datos_hex)
 
             # Si no se pudo extraer correctamente los datos, usamos "Not Found" como valor por defecto
             if not isinstance(datos_extraidos, dict):

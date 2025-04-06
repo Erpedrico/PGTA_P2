@@ -202,8 +202,8 @@ def extraer_datos(datos_hex):
             print(f"Item {item} - Bytes disponibles: {len(packet_bytes)}")
 
             if len(packet_bytes) >= longitud_d7:
-                data_item_bytes = packet_bytes[:longitud_d7].hex()
-                packet_bytes = packet_bytes[longitud_d7:]
+                data_item_bytes = packet_bytes[:longitud_d7+1].hex()
+                packet_bytes = packet_bytes[longitud_d7+1:]
             else:
                 print(f"No hay suficientes bytes para procesar item {item}. Se requieren {longitud_d7}, pero hay {len(packet_bytes)}.")
 
@@ -229,7 +229,7 @@ def extraer_datos(datos_hex):
                 first_octet = int(first_octet)  # Ya es un número entero
                 
                 # Ajustamos el valor del primer octeto sumando 1 (según tu lógica)
-                first_octet = first_octet // 100
+                first_octet = first_octet*8+1
                 
                 # Verificamos que la longitud del paquete es suficiente para evitar acceso fuera de rango
                 if first_octet > len(packet_bytes):

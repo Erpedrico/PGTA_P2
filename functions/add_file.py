@@ -27,10 +27,8 @@ def add_file(tabla):
             datos_hex = packet.hex()[:50] + "..." if len(packet) > 25 else packet.hex()  # Recortar datos largos
             all_datos_hex = packet.hex()
 
-
             # Tomamos el resto de los datos después del índice 3 (de acuerdo con las nuevas columnas)
             packet_data = packet[3:]  # El resto de los datos que queremos extraer
-
             # Convertimos el paquete a hexadecimal y lo procesamos
             datos_extraidos = extraer_datos(all_datos_hex)
 

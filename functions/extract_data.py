@@ -86,8 +86,10 @@ def extraer_datos(datos_hex):
         return
 
     # Paso 1: Saltar los tres primeros octetos
+    print("La longitud de los datos es:")
+    print(len(packet_bytes))
     packet_bytes = packet_bytes[3:]
-
+    print(len(packet_bytes))
     # Paso 2: Leer el primer octeto
     first_octet = packet_bytes[0]
 
@@ -117,12 +119,12 @@ def extraer_datos(datos_hex):
                 data_items.append(item_counter)
 
             item_counter += 1
+    
+    packet_bytes = packet_bytes[octets_to_read:]
 
 
     # Paso 6: Asignar valores a los campos dependiendo de los data items encontrados
     for item in data_items:
-        print(f"{item}:")
-        print(len(packet_bytes))
         if item == 1:
             print(len(packet_bytes))
             data_item_bytes = packet_bytes[:2].hex()
@@ -329,7 +331,21 @@ def extraer_datos(datos_hex):
             campos["AIC"] = str(resultado[5])
             campos["B1A"] = str(resultado[6])
             campos["B1B"] = str(resultado[7])
-        
+        elif item == 22:
+            data_item_bytes = packet_bytes[:7].hex()
+            packet_bytes = packet_bytes[7:]
+        elif item == 23:
+            data_item_bytes = packet_bytes[:1].hex()
+            packet_bytes = packet_bytes[1:]
+        elif item == 24:
+            data_item_bytes = packet_bytes[:2].hex()
+            packet_bytes = packet_bytes[2:]
+        elif item == 25:
+            data_item_bytes = packet_bytes[:1].hex()
+            packet_bytes = packet_bytes[1:]
+        elif item == 26:
+            data_item_bytes = packet_bytes[:2].hex()
+            packet_bytes = packet_bytes[2:]
         
 
     return campos  # Devolver los campos con los datos extraídos

@@ -4,9 +4,11 @@ import folium
 import os
 import webview
 from functions.add_file import add_file
-from functions.filter import filter_data
+from functions.filter import aplicar_filtros
 from functions.extract_data_fields import extract_data_fields
 from functions.extract_data import extraer_datos
+import pandas as pd
+from tkinter import simpledialog
 
 # Crear la ventana principal
 root = tk.Tk()
@@ -133,6 +135,105 @@ tabla.bind("<ButtonRelease-1>", on_row_select)
 # --------------------- Dummy extraer_datos ---------------------
 def extraer_datos(datos_hex):
     return {col: "Not Found" for col in columnas_datos}
+
+#####    BOTÓN FILTRAR     ####################################################################
+current_df = None  # Almacenará el DataFrame con los datos 
+
+
+#Prueba menú simple con solo 3 filtros
+
+# Variables para los filtros (globales)
+filtro_blancos = tk.BooleanVar(value=True)
+filtro_transponder = tk.BooleanVar(value=True)
+qnh_valor = tk.DoubleVar(value=1013.25)
+
+def mostrar_menu_filtros(event):
+    menu_filtros = tk.Menu(root, tearoff=0)
+   
+    # Opciones de filtro con variables de control
+    menu_filtros.add_checkbutton(label="Eliminar blancos puros", 
+                               variable=filtro_blancos,
+                               command=aplicar_filtros_actuales)
+    menu_filtros.add_checkbutton(label="Eliminar transponder fijo (7777)", 
+                               variable=filtro_transponder,
+                               command=aplicar_filtros_actuales)
+    
+    # Submenú para QNH
+    submenu_qnh = tk.Menu(menu_filtros, tearoff=0)
+    submenu_qnh.add_radiobutton(label="QNH estándar (1013.25 hPa)", 
+                              variable=qnh_valor, 
+                              value=1013.25,
+                              command=aplicar_filtros_actuales)
+    submenu_qnh.add_command(label="Ajustar manualmente...", 
+                          command=pedir_qnh_manual)
+    menu_filtros.add_cascade(label="Corrección QNH", menu=submenu_qnh)
+    
+    # Mostrar menú
+    try:
+        menu_filtros.tk_popup(event.x_root, event.y_root)
+    finally:
+        menu_filtros.grab_release()
+    
+    
+def pedir_qnh_manual():
+    nuevo_qnh = simpledialog.askfloat("QNH", "Ingrese valor QNH (hPa):", 
+                                     initialvalue=qnh_valor.get())
+    if nuevo_qnh:
+        qnh_valor.set(nuevo_qnh)
+        aplicar_filtros_actuales()
+
+def aplicar_filtros_actuales():
+    if current_df is None:
+        messagebox.showwarning("Error", "Primero carga un archivo")
+        return
+    
+    config = {
+        "eliminar_blancos_puros": filtro_blancos.get(),
+        "eliminar_transponder_fijo": filtro_transponder.get(),
+        "qnh_correccion": qnh_valor.get()
+    }
+    
+    try:
+        df_filtrado = aplicar_filtros(current_df, config)
+        actualizar_tabla(df_filtrado)
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudieron aplicar los filtros:\n{str(e)}")
+
+def actualizar_tabla(df):
+    # Limpiar tabla existente
+    for item in tabla.get_children():
+        tabla.delete(item)
+    
+    # Insertar nuevos datos (ejemplo con columnas básicas)
+    for _, row in df.iterrows():
+        tabla.insert("", "end", values=(
+            row.get("NUM", ""),
+            row.get("TYP020", ""),
+            row.get("Mode_3A", ""),
+              
+        ))
+
+# Botón de Filtrar con menú contextual
+btn_filtrar = ttk.Button(btn_frame, text="Filtrar")
+btn_filtrar.grid(row=0, column=2, padx=10, pady=5, sticky="ew")  # Añadido al frame de botones
+btn_filtrar.bind("<Button-1>", mostrar_menu_filtros)
+
+#Botón de carga de archivo (ejemplo muy pequeño)
+def cargar_archivo():
+    global current_df
+    # Simulación de datos 
+    current_df = pd.DataFrame({
+        "NUM": [1, 2, 3],
+        "TYP020": ["Single ModeS All-Call", "Primary", "ModeS Roll-Call + PSR"],
+        "Mode_3A": [1234, 5678, 7777],
+        "ModeC_corrected": [5000, 3000, 6000]
+    })
+    messagebox.showinfo("Éxito", "Datos cargados")
+btn_cargar = ttk.Button(root, text="Cargar Archivo", command=cargar_archivo)
+btn_cargar.pack(pady=10)
+
+
+
 
 print("Lanzando interfaz...")
 root.mainloop()

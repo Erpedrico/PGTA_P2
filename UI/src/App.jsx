@@ -9,8 +9,8 @@ import {
   Portal,
   DataList
 } from "@chakra-ui/react";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from 'leaflet';
 import "leaflet/dist/leaflet.css";
 
 // Dummy data for table
@@ -19,6 +19,12 @@ const locations = [
   { id: 2, name: "Location B", lat: 51.515, lng: -0.1 },
   { id: 3, name: "Location C", lat: 51.525, lng: -0.11 }
 ];
+
+const iconPlane = new L.Icon({
+  iconUrl: "/plane.svg", 
+  popupAnchor: [-0, -0],
+  iconSize: [32, 32],
+});
 
 function App() {
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -76,6 +82,7 @@ function App() {
               <Marker
                 key={loc.id}
                 position={[loc.lat, loc.lng]}
+                icon={iconPlane}
                 eventHandlers={{
                   click: () => setSelectedLocation(loc),
                 }}
@@ -99,21 +106,21 @@ function App() {
                 </Drawer.Header>
                 <Drawer.Body>
                   {selectedLocation && (
-                  <DataList.Root>
-                    <DataList.Item>
-                      <DataList.ItemLabel>ID</DataList.ItemLabel>
-                      <DataList.ItemValue>{selectedLocation.id}</DataList.ItemValue>
-                    </DataList.Item><DataList.Item>
-                      <DataList.ItemLabel>Name</DataList.ItemLabel>
-                      <DataList.ItemValue>{selectedLocation.name}</DataList.ItemValue>
-                    </DataList.Item><DataList.Item>
-                      <DataList.ItemLabel>Lat</DataList.ItemLabel>
-                      <DataList.ItemValue>{selectedLocation.lat}</DataList.ItemValue>
-                    </DataList.Item><DataList.Item>
-                      <DataList.ItemLabel>Lng</DataList.ItemLabel>
-                      <DataList.ItemValue>{selectedLocation.lng}</DataList.ItemValue>
-                    </DataList.Item>
-                  </DataList.Root>
+                    <DataList.Root>
+                      <DataList.Item>
+                        <DataList.ItemLabel>ID</DataList.ItemLabel>
+                        <DataList.ItemValue>{selectedLocation.id}</DataList.ItemValue>
+                      </DataList.Item><DataList.Item>
+                        <DataList.ItemLabel>Name</DataList.ItemLabel>
+                        <DataList.ItemValue>{selectedLocation.name}</DataList.ItemValue>
+                      </DataList.Item><DataList.Item>
+                        <DataList.ItemLabel>Lat</DataList.ItemLabel>
+                        <DataList.ItemValue>{selectedLocation.lat}</DataList.ItemValue>
+                      </DataList.Item><DataList.Item>
+                        <DataList.ItemLabel>Lng</DataList.ItemLabel>
+                        <DataList.ItemValue>{selectedLocation.lng}</DataList.ItemValue>
+                      </DataList.Item>
+                    </DataList.Root>
                   )}
                 </Drawer.Body>
                 <Drawer.CloseTrigger asChild>

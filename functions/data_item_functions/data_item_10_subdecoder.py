@@ -5,7 +5,8 @@ LETTERLIST = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
               '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',  '',  '',  '',  '',  '',  '']
 # map type code to their decoder functions
 
-def _0(bdsdata: bytes) -> dict:
+
+def _6(bdsdata: bytes) -> dict:
     # 0,6 — Extended squitter surface position
     ranges = {
         "TYPE": [1, 5],
@@ -22,7 +23,7 @@ def _0(bdsdata: bytes) -> dict:
     # TODO
 
 
-def _1_4(bdsdata: bytes) -> dict:
+def _8(bdsdata: bytes) -> dict:
     # 0,8 Extended squitter aircraft identification and category
     ranges = {
         "TYPE": [1, 5],
@@ -78,18 +79,18 @@ def _1_4(bdsdata: bytes) -> dict:
     }
 
 
-def _19(bdsdata: bytes) -> dict:
+def _9(bdsdata: bytes) -> dict:
     # 0,9 — Extended squitter airborne velocity
     r = extract_bit(bdsdata, 6, 8)
     if r["SUBTYPE"] == 1 or r["SUBTYPE"] == 2:
-        return _19a(bdsdata)
+        return _9a(bdsdata)
     elif r["SUBTYPE"] == 3 or r["SUBTYPE"] == 4:
-        return _19b(bdsdata)
+        return _9b(bdsdata)
     else:
         return None
 
 
-def _19a(bdsdata: bytes) -> dict:
+def _9a(bdsdata: bytes) -> dict:
     # 0,9a — Extended squitter airborne velocity, ground
     ranges = {
         "TYPE": [1, 5],
@@ -132,7 +133,7 @@ def _19a(bdsdata: bytes) -> dict:
     }
 
 
-def _19b(bdsdata: bytes) -> dict:
+def _9b(bdsdata: bytes) -> dict:
     # 0,9b — Extended squitter airborne velocity, air
     ranges = {
         "TYPE": [1, 5],
@@ -211,24 +212,36 @@ def extract_bit(data: bytes, start: int, end: int) -> int:
 
     return result_int
 
-BDS_TYPE_MAPPING = [_0,       _1_4,   _1_4,  _1_4,  _1_4,  # 4
-                    _5_8,     _5_8,   _5_8,  _5_8,  _9_18,  # 9
-                    _9_18,   _9_18,  _9_18, _9_18,  _9_18,  # 14
-                    _9_18,   _9_18,  _9_18, _9_18,   _19,   # 19
-                    _20_22, _20_22, _20_22,  _23,    _24,   # 24
-                    _25_26, _25_26,   _27,   _28,    _29,   # 29
-                    _30,       _31]
+
+BDS_TYPE_MAPPING = [
+    None, None, None, None, None, _5, _6, _7, _8, _9, _10, _11, _12, None, None, None,
+    _16, None, None, None, None, None, None, _23, _24, _25, _26, _27, _28, _29, _30, _31,
+    _32, _33, _34, None, None, _37, None, None, None, None, None, None, None, None, None, None,
+    _48, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    _64, _65, _66, _67, _68, _69, None, None, _72, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+]
 
 
-def decode(bdsdata: bytes) -> (list | None):
+def decode(bdsdata: bytes, bdscode: int) -> (list | None):
     """
-    BDS(7bytes)
+    BDS(7bytes), BDSCODE 0-255
     """
-    type_code = extract_bit(bdsdata, 0, 5)
-    if type_code > 31:
-        print(f"Error: el tipo BDS {type_code} no es válido")
+    f = BDS_TYPE_MAPPING[bdscode]
+    if f is None:
+        print(f"Error: BDS {bdscode} no soportado")
         return None
-    message = BDS_TYPE_MAPPING[type_code](bdsdata)
+    message = f(bdsdata)
     if message is None:
         print("Error: error en decodificación")
         return None

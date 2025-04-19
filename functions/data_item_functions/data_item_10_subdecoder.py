@@ -6,6 +6,86 @@ LETTERLIST = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
 # map type code to their decoder functions
 
 
+def cpr_decode(cpr: int) -> str:
+    """
+    17bit
+    #TODO need 2 frames, so should be implemented in post-processing
+    """
+    pass
+
+
+def _5(bdsdata: bytes) -> dict:
+    # 0,5 — Extended squitter airborne position
+    ranges = {
+        "TYPE": [1, 5],
+        "SURVEILLANCE": [6, 7],
+        "SAF": [8, 8],
+        "ALTITUDE": [9, 20],
+        "TIME": [21, 21],
+        "CPR_FORMAT": [22, 22],
+        "LATITUDE": [23, 39],
+        "LONGITUDE": [40, 56]
+    }
+    r = ranges_to_bytes(bdsdata, ranges)
+
+    def gray_to_binary(n):
+        result = n
+        while n > 0:
+            n >>= 1
+            result ^= n
+        return result
+
+    def ac_decode(v):
+        # ignore M(6) 0, Q(8-1) 0:100ft, 1:25ft
+        # Q0:  C1, A1, C2, A2, C4, A4, (ZERO,) B1, ZERO, B2, D2, B4, D4
+        # D2 D4 A1 A2 A4 B1 B2 B4 Gray code, C4 C1 C2 follow decoder
+        # Q1:  0 to 5, 7-1 and 9-1 to 12-1
+        if v & 0x010:
+            return str(25*((v & 0xFE0) >> 1 + (v & 0x00F)))
+        else:
+            case_odd = [Null, 4, 2, 3, 0, Null, 1]  # odd 4 6 2 3 1
+            case_even = [Null, 0, 2, 1, 4, Null, 3]  # even 1 3 2 6 4
+            C1 = (v & 0b100000000000) >> 11
+            A1 = (v & 0b010000000000) >> 10
+            C2 = (v & 0b001000000000) >> 9
+            A2 = (v & 0b000100000000) >> 8
+            C4 = (v & 0b000010000000) >> 7
+            A4 = (v & 0b000001000000) >> 6
+            B1 = (v & 0b000000100000) >> 5
+            B2 = (v & 0b000000001000) >> 3
+            D2 = (v & 0b000000000100) >> 2
+            B4 = (v & 0b000000000010) >> 1
+            D4 = (v & 0b000000000001)
+            # base gray code
+            G = D2 << 7 | D4 << 6 | A1 << 5 | A2 << 4 | A4 << 3 | B1 << 2 | B2 << 1 | B4
+            G = gray_to_binary(G)
+            # delta (inc) some special coding rule
+            d = C1 << 2 | C2 << 1 | C4
+            if B4:  # odd
+                G = - 1200 + 500*G  # left boundary
+                G += 100*case_odd[d]
+            else:  # even
+                G = 1200 - 500*G
+                G += 100*case_even[d]
+            if G <= -1000:
+                return "-1000 to -950 ft"
+            elif G >= 126650:
+                return "126650 to 126750 ft"
+            else:
+                return str(G) + " to " + str(G+100) + " ft"
+
+    return {
+        "name": "Airborne Position",
+        "Surveillance status": ["no condition", "permanent alert", "temporary alert", "SPI condition"][r["SURVEILLANCE"]],
+        "SAF": ["dual antenna", "single antenna"][r["SAF"]],
+        "Altitude": ac_decode(r["ALTITUDE"]),
+        "Time": ["not sync. UTC", "sync. UTC"][r["TIME"]],
+        "CPR format": r["CPR_FORMAT"],  # int 0 or
+        "Latitude": r["LATITUDE"],
+        "Longitude": r["LONGITUDE"]
+    }
+
+
 def _6(bdsdata: bytes) -> dict:
     # 0,6 — Extended squitter surface position
     ranges = {
@@ -41,6 +121,7 @@ def _8(bdsdata: bytes) -> dict:
     r = ranges_to_bytes(bdsdata, ranges)
 
     return {
+        "name": "Aircraft Identification and Category",
         "category": [  # in D C B A order
             ["RESERVED"] * 8,  # D reserved
             ["NO INFO"
@@ -113,6 +194,7 @@ def _9a(bdsdata: bytes) -> dict:
     supersonic = r["SUBTYPE"] & 1
     speedbase = 4 if supersonic else 1
     return {
+        "name": "Airborne Velocity, Ground",
         "subtype": "Ground Speed, " + ("Normal" if supersonic else "Supersonic"),
         "intent change": r["INTENT_CHANGE_FLAG"],
         "IFR capacity": r["IFR_CAPACITY_FLAG"],
@@ -156,6 +238,7 @@ def _9b(bdsdata: bytes) -> dict:
     supersonic = r["SUBTYPE"] & 1
     speedbase = 4 if supersonic else 1
     return {
+        "name": "Airborne Velocity, Air",
         "subtype": "Air Speed, " + ("Normal" if supersonic else "Supersonic"),
         "intent change": r["INTENT_CHANGE_FLAG"],
         "IFR capacity": r["IFR_CAPACITY_FLAG"],
@@ -214,22 +297,22 @@ def extract_bit(data: bytes, start: int, end: int) -> int:
 
 
 BDS_TYPE_MAPPING = [
-    None, None, None, None, None, _5, _6, _7, _8, _9, _10, _11, _12, None, None, None,
-    _16, None, None, None, None, None, None, _23, _24, _25, _26, _27, _28, _29, _30, _31,
-    _32, _33, _34, None, None, _37, None, None, None, None, None, None, None, None, None, None,
-    _48, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    _64, _65, _66, _67, _68, _69, None, None, _72, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None
+  None,None,None,None,None,_5,_6,_7,_8,_9,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
 ]
 
 

@@ -70,7 +70,7 @@ def _5(bdsdata: bytes) -> dict:
                 return str(G) + " to " + str(G+100) + " ft"
 
     return {
-        "name": "Airborne Position",
+        "name": "Extended squitter Airborne Position",
         "Surveillance status": ["no condition", "permanent alert", "temporary alert", "SPI condition"][r["SURVEILLANCE"]],
         "SAF": ["dual antenna", "single antenna"][r["SAF"]],
         "Altitude": ac_decode(r["ALTITUDE"]),
@@ -119,7 +119,7 @@ def _6(bdsdata: bytes) -> dict:
             return "Reserved"
 
     return {
-        "name": "Surface Position",
+        "name": "Extended squitter Surface Position",
         "Movement": movement_decoder(r["MOVEMENT"]),
         "Status": ["Invalid", "Valid"][r["STATUS"]],
         "ground track": str(r["TRACK"]*360/128) + "°",
@@ -127,6 +127,24 @@ def _6(bdsdata: bytes) -> dict:
         "CPR format": r["CPR_FORMAT"],  # int 0 or 1
         "Latitude": r["LATITUDE"],
         "Longitude": r["LONGITUDE"]
+    }
+
+
+def _7(bdsdata: bytes) -> dict:
+    # BDS Code 0,7 — Extended squitter status
+    ranges = {
+        "TRANSMISSION_RATE": [1, 2],
+        "ALTITUDE_TYPE": [3, 3]
+        # reserved
+    }
+    r = ranges_to_bytes(bdsdata, ranges)
+    return {
+        "name": "Extended squitter status",
+        "Transmission rate": ["No capacity to determine surface squitter rate",
+                              "High surface squitter rate selected",
+                              "Low surface squitter rate selected",
+                              "Reserved"][r["TRANSMISSION_RATE"]],
+        "Altitude type": ["Barometric altitude", "GNSS height"][r["ALTITUDE_TYPE"]]
     }
 
 

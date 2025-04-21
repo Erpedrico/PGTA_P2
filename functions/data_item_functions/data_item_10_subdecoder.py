@@ -5,13 +5,8 @@ LETTERLIST = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M
               '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',  '',  '',  '',  '',  '',  '']
 # map type code to their decoder functions
 
-
-def cpr_decode(cpr: int) -> str:
-    """
-    17bit
-    #TODO need 2 frames, so should be implemented in post-processing
-    """
-    pass
+# TODO need 2 frames, so should be implemented in post-processing
+# def cpr_decode(cpr: int)
 
 
 def _5(bdsdata: bytes) -> dict:
@@ -43,8 +38,8 @@ def _5(bdsdata: bytes) -> dict:
         if v & 0x010:
             return str(25*((v & 0xFE0) >> 1 + (v & 0x00F)))
         else:
-            case_odd = [Null, 4, 2, 3, 0, Null, 1]  # odd 4 6 2 3 1
-            case_even = [Null, 0, 2, 1, 4, Null, 3]  # even 1 3 2 6 4
+            case_odd = [None, 4, 2, 3, 0, None, 1]  # odd 4 6 2 3 1
+            case_even = [None, 0, 2, 1, 4, None, 3]  # even 1 3 2 6 4
             C1 = (v & 0b100000000000) >> 11
             A1 = (v & 0b010000000000) >> 10
             C2 = (v & 0b001000000000) >> 9
@@ -80,7 +75,7 @@ def _5(bdsdata: bytes) -> dict:
         "SAF": ["dual antenna", "single antenna"][r["SAF"]],
         "Altitude": ac_decode(r["ALTITUDE"]),
         "Time": ["not sync. UTC", "sync. UTC"][r["TIME"]],
-        "CPR format": r["CPR_FORMAT"],  # int 0 or
+        "CPR format": r["CPR_FORMAT"],  # int 0 or 1
         "Latitude": r["LATITUDE"],
         "Longitude": r["LONGITUDE"]
     }
@@ -100,7 +95,39 @@ def _6(bdsdata: bytes) -> dict:
     }
     # info in number format
     r = ranges_to_bytes(bdsdata, ranges)
-    # TODO
+
+    def movement_decoder(m: int) -> str:
+        if m == 0:
+            return "No info"
+        elif m == 1:
+            return "Stopped (<0.125kt)"
+        elif m <= 8:
+            return str(0.125+(m-2)*0.125) + " kt"
+        elif m <= 12:
+            return str(1+(m-9)*0.25) + " kt"
+        elif m <= 38:
+            return str(2+(m-13)*0.5) + " kt"
+        elif m <= 93:
+            return str(15+(m-39)*1) + " kt"
+        elif m <= 108:
+            return str(70+(m-94)*2) + " kt"
+        elif m <= 123:
+            return str(100+(m-109)*5) + " kt"
+        elif m == 124:
+            return "> 175 kt"
+        else:
+            return "Reserved"
+
+    return {
+        "name": "Surface Position",
+        "Movement": movement_decoder(r["MOVEMENT"]),
+        "Status": ["Invalid", "Valid"][r["STATUS"]],
+        "ground track": str(r["TRACK"]*360/128) + "°",
+        "Time": ["not sync. UTC", "sync. UTC"][r["TIME"]],
+        "CPR format": r["CPR_FORMAT"],  # int 0 or 1
+        "Latitude": r["LATITUDE"],
+        "Longitude": r["LONGITUDE"]
+    }
 
 
 def _8(bdsdata: bytes) -> dict:
@@ -297,22 +324,22 @@ def extract_bit(data: bytes, start: int, end: int) -> int:
 
 
 BDS_TYPE_MAPPING = [
-  None,None,None,None,None,_5,_6,_7,_8,_9,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
-  None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None,
+    None, None, None, None, None, _5, _6, _7, _8, _9, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
 ]
 
 

@@ -9,6 +9,7 @@ from functions.extract_data_fields import extract_data_fields
 from functions.extract_data import extraer_datos
 import pandas as pd
 from tkinter import simpledialog
+import csv
 
 # Crear la ventana principal
 root = tk.Tk()
@@ -71,7 +72,7 @@ btn_frame.pack(side="top", pady=10, fill="x", padx=20)
 
 btn_abrir = tk.Button(btn_frame, text="Abrir Mapa en Navegador", command=abrir_mapa)
 btn_archivo = tk.Button(btn_frame, text="Añadir Archivo", command=lambda: add_file(tabla))  
-btn_filtrar = tk.Button(btn_frame, text="Filtrar", command=filter_data)
+btn_filtrar = tk.Button(btn_frame, text="Filtrar", command=aplicar_filtros)
 btn_mapa_webview = tk.Button(btn_frame, text="Ver Mapa", command=abrir_mapa_webview)
 
 # Posicionar botones de manera profesional
@@ -136,104 +137,213 @@ tabla.bind("<ButtonRelease-1>", on_row_select)
 def extraer_datos(datos_hex):
     return {col: "Not Found" for col in columnas_datos}
 
-#####    BOTÓN FILTRAR     ####################################################################
-current_df = None  # Almacenará el DataFrame con los datos 
+# --------------------- FILTRADO  ---------------------
+current_df = None  # DataFrame con los datos originales
+filtro_blancos = tk.BooleanVar(value=False)
+filtro_transponder = tk.BooleanVar(value=False)
+filtro_on_ground = tk.BooleanVar(value=False)
+df_filtrado=None #DataFrame con los datos filtrados
 
 
-#Prueba menú simple con solo 3 filtros
+def extraer_datos_tabla():
+    global current_df
+    datos = []
+    
+    columnas_completas = ["Paquete", "CAT", "LEN", "Hex (Raw)"] + [
+        "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description",
+        "Validated", "Garbled", "CodeSource", "Mode3ACode", "Validated_FL",
+        "Garbled_FL", "FL", "Address", "ID", "BDS", "TRACK NUMBER", 
+        "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING", "LAT", "LON",
+        "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B",
+        "RHO", "THETA"
+    ]
+    
+    for item in tabla.get_children():
+        valores = tabla.item(item)['values']
+        if len(valores) >= len(columnas_completas):
+            fila = dict(zip(columnas_completas, valores))
+            datos.append(fila)
+    
+    current_df = pd.DataFrame(datos) if datos else None
+    return current_df is not None
 
-# Variables para los filtros (globales)
-filtro_blancos = tk.BooleanVar(value=True)
-filtro_transponder = tk.BooleanVar(value=True)
-qnh_valor = tk.DoubleVar(value=1013.25)
-
-def mostrar_menu_filtros(event):
-    menu_filtros = tk.Menu(root, tearoff=0)
-   
-    # Opciones de filtro con variables de control
-    menu_filtros.add_checkbutton(label="Eliminar blancos puros", 
-                               variable=filtro_blancos,
-                               command=aplicar_filtros_actuales)
-    menu_filtros.add_checkbutton(label="Eliminar transponder fijo (7777)", 
-                               variable=filtro_transponder,
-                               command=aplicar_filtros_actuales)
+def mostrar_dialogo_filtros():
+    dialogo = tk.Toplevel(root)
+    dialogo.title("Configurar Filtros")
+    dialogo.geometry("400x300")
     
-    # Submenú para QNH
-    submenu_qnh = tk.Menu(menu_filtros, tearoff=0)
-    submenu_qnh.add_radiobutton(label="QNH estándar (1013.25 hPa)", 
-                              variable=qnh_valor, 
-                              value=1013.25,
-                              command=aplicar_filtros_actuales)
-    submenu_qnh.add_command(label="Ajustar manualmente...", 
-                          command=pedir_qnh_manual)
-    menu_filtros.add_cascade(label="Corrección QNH", menu=submenu_qnh)
+    # Variables temporales
+    temp_blancos = tk.BooleanVar(value=filtro_blancos.get())
+    temp_transponder = tk.BooleanVar(value=filtro_transponder.get())
+    temp_on_ground = tk.BooleanVar(value=filtro_on_ground.get())
     
-    # Mostrar menú
-    try:
-        menu_filtros.tk_popup(event.x_root, event.y_root)
-    finally:
-        menu_filtros.grab_release()
+    # Controles
+    ttk.Checkbutton(dialogo, text="Eliminar blancos puros", variable=temp_blancos).pack(anchor="w", pady=5)
+    ttk.Checkbutton(dialogo, text="Eliminar transponder fijo", variable=temp_transponder).pack(anchor="w", pady=5)
+    ttk.Checkbutton(dialogo, text="Eliminar on ground", variable=temp_on_ground).pack(anchor="w", pady=5)
+       
     
-    
-def pedir_qnh_manual():
-    nuevo_qnh = simpledialog.askfloat("QNH", "Ingrese valor QNH (hPa):", 
-                                     initialvalue=qnh_valor.get())
-    if nuevo_qnh:
-        qnh_valor.set(nuevo_qnh)
+    def aplicar():
+        filtro_blancos.set(temp_blancos.get())
+        filtro_transponder.set(temp_transponder.get())
+        filtro_on_ground.set(temp_on_ground.get())
         aplicar_filtros_actuales()
+        dialogo.destroy()
+    
+    ttk.Button(dialogo, text="Aplicar", command=aplicar).pack(side="right", padx=5)
+    ttk.Button(dialogo, text="Cancelar", command=dialogo.destroy).pack(side="right")
 
 def aplicar_filtros_actuales():
+    global current_df, df_filtrado
     if current_df is None:
-        messagebox.showwarning("Error", "Primero carga un archivo")
-        return
-    
-    config = {
-        "eliminar_blancos_puros": filtro_blancos.get(),
-        "eliminar_transponder_fijo": filtro_transponder.get(),
-        "qnh_correccion": qnh_valor.get()
-    }
+        if not extraer_datos_tabla():
+            messagebox.showwarning("Error", "Primero carga un archivo")
+            return
     
     try:
-        df_filtrado = aplicar_filtros(current_df, config)
+        df_filtrado = current_df.copy()
+        
+        # 1. Filtro de blancos puros (conservando nombres Python)
+        if filtro_blancos.get():
+            modos_validos = [
+                "Single ModeS All-Call",
+                "Single ModeS Roll-Call",
+                "ModeS All-Call+PSR",
+                "ModeS Roll-Call + PSR"
+            ]
+            # Convertimos a string y aplicamos filtro
+            df_filtrado = df_filtrado[
+                df_filtrado['Target report description'].astype(str).apply(lambda x: any(m in x for m in modos_validos)  )
+            ]
+        
+        # 2. Filtro de transponder 
+        if filtro_transponder.get():
+            mask = (df_filtrado['FL'] == 'N/A') | (~df_filtrado['FL'].astype(str).str.contains('7777'))
+            df_filtrado = df_filtrado[mask]
+        
+        # 3. Filtro on ground 
+        if filtro_on_ground.get():
+            estados_tierra = [
+                "No alert, no SPI, aircraft on ground",
+                "Alert, no SPI, aircraft on ground"
+            ]
+            df_filtrado = df_filtrado[~df_filtrado['STAT'].isin(estados_tierra)]
+        
+        
         actualizar_tabla(df_filtrado)
+        
     except Exception as e:
-        messagebox.showerror("Error", f"No se pudieron aplicar los filtros:\n{str(e)}")
+        messagebox.showerror("Error", f"Fallo al filtrar:\n{str(e)}")
 
 def actualizar_tabla(df):
-    # Limpiar tabla existente
     for item in tabla.get_children():
         tabla.delete(item)
     
-    # Insertar nuevos datos (ejemplo con columnas básicas)
     for _, row in df.iterrows():
-        tabla.insert("", "end", values=(
+        valores = [
+            row.get("Paquete", ""),
+            row.get("CAT", ""),
+            row.get("LEN", ""),
+            row.get("Hex (Raw)", ""),
             row.get("NUM", ""),
-            row.get("TYP020", ""),
-            row.get("Mode_3A", ""),
-              
-        ))
+            row.get("SAC", ""),
+            row.get("SIC", ""),
+            row.get("TIME", ""),
+            row.get("TIME(s)", ""),
+            row.get("Target report description", ""),
+            row.get("Validated", ""),
+            row.get("Garbled", ""),
+            row.get("CodeSource", ""),
+            row.get("Mode3ACode", ""),
+            row.get("Validated_FL", ""),
+            row.get("Garbled_FL", ""),
+            row.get("FL", ""),
+            row.get("Address", ""),
+            row.get("ID", ""),
+            row.get("BDS", ""),
+            row.get("TRACK NUMBER", ""),
+            row.get("TRACK STATUS", ""),
+            row.get("X", ""),
+            row.get("Y", ""),
+            row.get("GS", ""),
+            row.get("GS_KT", ""),
+            row.get("HEADING", ""),
+            row.get("LAT", ""),
+            row.get("LON", ""),
+            row.get("H", ""),
+            row.get("COM", ""),
+            row.get("STAT", ""),
+            row.get("SI", ""),
+            row.get("MSSC", ""),
+            row.get("ARC", ""),
+            row.get("AIC", ""),
+            row.get("B1A", ""),
+            row.get("B1B", ""),
+            row.get("RHO", ""),
+            row.get("THETA", "")
+        ]
+        tabla.insert("", "end", values=valores)
 
-# Botón de Filtrar con menú contextual
-btn_filtrar = ttk.Button(btn_frame, text="Filtrar")
-btn_filtrar.grid(row=0, column=2, padx=10, pady=5, sticky="ew")  # Añadido al frame de botones
-btn_filtrar.bind("<Button-1>", mostrar_menu_filtros)
+# Configurar botones
+btn_filtrar = ttk.Button(btn_frame, text="Filtrar", command=mostrar_dialogo_filtros)
+btn_filtrar.grid(row=0, column=2, padx=10, pady=5, sticky="ew")
 
-#Botón de carga de archivo (ejemplo muy pequeño)
-def cargar_archivo():
-    global current_df
-    # Simulación de datos 
-    current_df = pd.DataFrame({
-        "NUM": [1, 2, 3],
-        "TYP020": ["Single ModeS All-Call", "Primary", "ModeS Roll-Call + PSR"],
-        "Mode_3A": [1234, 5678, 7777],
-        "ModeC_corrected": [5000, 3000, 6000]
-    })
-    messagebox.showinfo("Éxito", "Datos cargados")
-btn_cargar = ttk.Button(root, text="Cargar Archivo", command=cargar_archivo)
-btn_cargar.pack(pady=10)
+btn_reset = ttk.Button(btn_frame, text="Resetear", command=lambda: [filtro_blancos.set(False), filtro_transponder.set(False), filtro_on_ground.set(False), aplicar_filtros_actuales()])
+btn_reset.grid(row=0, column=3, padx=10, pady=5, sticky="ew")
 
 
+#............Exportar a CSV............................
+def exportar_a_csv():
+    """Función corregida para exportar DataFrames a CSV"""
+    global df_filtrado
+    
+    if df_filtrado is None or df_filtrado.empty:
+        messagebox.showwarning("Advertencia", "No hay datos para exportar")
+        return
+    
+    try:
+        # Configuración del diálogo de guardado
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".csv",
+            filetypes=[
+                ("CSV (delimitado por comas)", "*.csv"),
+                ("CSV (delimitado por punto y coma)", "*.csv"),
+                ("Todos los archivos", "*.*")
+            ],
+            title="Guardar como CSV"
+        )
+        
+        if not file_path:  # Si el usuario cancela
+            return
+        
+        # Separador basado en la selección
+        if "punto y coma" in file_path.lower():
+            separador = ';'
+        else:
+            separador = ','
+        
+        # Exportar usando pandas
+        df_filtrado.to_csv(
+            file_path,
+            index=False,
+            sep=separador,
+            encoding='utf-8'
+        )
+        
+        messagebox.showinfo("Éxito", f"Archivo guardado correctamente en:\n{file_path}")
+    
+    except Exception as e:
+        messagebox.showerror("Error", f"No se pudo guardar el archivo:\n{str(e)}")
+
+# Botón exportar
+btn_exportar = ttk.Button(
+    btn_frame, 
+    text="Exportar CSV", 
+    command=exportar_a_csv
+)
+btn_exportar.grid(row=0, column=4, padx=10, pady=5, sticky="ew")
 
 
 print("Lanzando interfaz...")
 root.mainloop()
+

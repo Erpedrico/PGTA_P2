@@ -7,7 +7,7 @@ from functions.data_item_functions.data_item_6Corrected import data_item_6
 from functions.data_item_functions.data_item_7 import data_item_7
 from functions.data_item_functions.data_item_8Corrected import data_item_8
 from functions.data_item_functions.data_item_9Corrected import data_item_9
-from functions.data_item_functions.data_item_10 import data_item_10
+#from functions.data_item_functions.data_item_10 import data_item_10
 from functions.data_item_functions.data_item_11Corrected import data_item_11
 from functions.data_item_functions.data_item_12Corrected import data_item_12
 from functions.data_item_functions.data_item_13Corrected import data_item_13

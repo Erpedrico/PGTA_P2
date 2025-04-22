@@ -1,14 +1,14 @@
 """
 Data Item I048/250, BDS Register Data
-"""
+
 import data_item_10_subdecoder as BDS
 
 
 def data_item_10(packet) -> (list | None):
-    """
+    
     input: [REP(1byte), [[BDS(7bytes), BDS1(4bit), BDS2(4bit)]...]]
     output: [REP(1byte), [BDS(decoded as dict),...]]
-    """
+    
     cleaned_packet = "".join(
         c for c in packet if c in "0123456789abcdefABCDEF")
     if len(cleaned_packet) % 2 != 0:
@@ -42,3 +42,4 @@ def data_item_10(packet) -> (list | None):
             continue
         bds.append(bdsdata)
     return [rep, bds]
+"""

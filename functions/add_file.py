@@ -2,13 +2,20 @@ import struct
 from tkinter import filedialog, messagebox
 from functions.extract_packets import parse_binary_file
 from functions.extract_data import extraer_datos
+from Menu import mostrar_carga, ocultar_carga, root, os
+
 
 def add_file(tabla):
+     
     file_path = filedialog.askopenfilename(filetypes=[("Archivos binarios", "*.ast"), ("Todos los archivos", "*.*")])
     if not file_path:
         return
+    # Mostrar pantalla de carga
+    carga = mostrar_carga(f"Cargando archivo:\n{os.path.basename(file_path)}")
+    root.update()
 
     try:
+
         packets = parse_binary_file(file_path)
 
         if not packets:
@@ -41,10 +48,14 @@ def add_file(tabla):
 
             # Insertamos la fila en la tabla
             tabla.insert("", "end", values=fila)
-
+        ocultar_carga(carga)
         messagebox.showinfo("Carga exitosa", f"Se han cargado {len(packets)} paquetes.")
+        
 
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo procesar el archivo.\n{str(e)}")
+   
+        
+        
 
 

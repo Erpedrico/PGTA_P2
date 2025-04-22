@@ -55,7 +55,3 @@ def add_file(tabla):
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo procesar el archivo.\n{str(e)}")
    
-        
-        
-
-

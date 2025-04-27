@@ -10,9 +10,7 @@ from functions.extract_data import extraer_datos
 import pandas as pd
 from tkinter import simpledialog
 import csv
-from functions.Aviones import mostrar_mapa_aviones, process_aircraft_packet
-import threading
-import time
+
 
 # Crear la ventana principal
 root = tk.Tk()
@@ -36,13 +34,6 @@ def abrir_mapa():
 # Función para abrir el mapa en ventana emergente
 def abrir_mapa_webview():
     webview.create_window("Mapa Interactivo", mapa_path)
-
-    # Primero procesar todos los paquetes para construir las trayectorias
-    procesar_paquetes_para_mapa()
-    
-    # Luego mostrar el mapa con los aviones
-    mostrar_mapa_aviones()
-    
     webview.start()
 
 # --------------------- Botones de control ---------------------
@@ -417,44 +408,9 @@ def mostrar_carga(mensaje):
 def ocultar_carga(ventana_carga):
     ventana_carga.grab_release()
     ventana_carga.destroy()
-#MAPA PRUEBA##########################################################################3
-def procesar_paquetes_para_mapa():
-    """Procesa todos los paquetes de la tabla para construir las trayectorias"""
-    carga = mostrar_carga("Procesando paquetes para el mapa...")
-    
-    try:
-        # Limpiar datos anteriores
-        from functions.Aviones import aircraft_data
-        aircraft_data.clear()
-        
-        # Procesar cada paquete en la tabla
-        for item in tabla.get_children():
-            valores = tabla.item(item)['values']
-            if len(valores) > 3:  # Asegurarse que hay datos hex
-                hex_data = valores[3]
-                try:
-                    # Procesar el paquete en un hilo secundario
-                    t = threading.Thread(target=process_aircraft_packet, args=(hex_data,))
-                    t.start()
-                    # Pequeña pausa para no saturar
-                    time.sleep(0.01)
-                except Exception as e:
-                    print(f"Error procesando paquete: {e}")
-        
-        messagebox.showinfo("Proceso completado", "Datos de aviones listos para visualización")
-    finally:
-        ocultar_carga(carga)
 
-# Modificar el botón del mapa de aviones para que procese primero los datos
-btn_mapa_aviones = ttk.Button(
-    btn_frame,
-    text="Mapa de Aviones",
-    command=lambda: [procesar_paquetes_para_mapa(), mostrar_mapa_aviones()],
-    style='Accent.TButton'
-)
-btn_mapa_aviones.grid(row=0, column=6, padx=5, pady=5, sticky="ew")
 
-######################################################################################################
+
 print("Lanzando interfaz...")
 root.mainloop()
 

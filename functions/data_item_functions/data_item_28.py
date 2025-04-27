@@ -4,7 +4,7 @@ RE-Data-Item Reserved Expansion Field
 
 
 def MD5_decoder(packet: bytes, items_indicator: int) -> dict:
-    r = {}
+    r = {"name": "MD5"}
     SUM = items_indicator & 0b10000000
     PMN = items_indicator & 0b01000000
     POS = items_indicator & 0b00100000
@@ -98,6 +98,7 @@ def M5E_decoder(packet: bytes, items_indicator: int) -> dict:
     XP = items_indicator & 0b00000010
     FOM = items_indicator & 0b00000001
     r = MD5_decoder(packet, items_indicator)
+    r["name"] = "M5E"
     if FOM:
         r["Figure of Merit"] = packet[-1]
     return r
@@ -108,7 +109,7 @@ def RPC_decoder(packet: bytes, items_indicator: int) -> dict:
     SCR = items_indicator & 0b01000000
     RW = items_indicator & 0b00100000
     AR = items_indicator & 0b00010000
-    r = {}
+    r = {"name": "RPC"}
     if SCO:
         subfield = packet[0]
         packet = packet[1:]
@@ -130,11 +131,11 @@ def RPC_decoder(packet: bytes, items_indicator: int) -> dict:
     return r
 
 
-def data_item_28(packet) -> dict:
+def data_item_28(packet) -> list:
     cleaned_packet = "".join(
         c for c in packet if c in "0123456789abcdefABCDEF")
     packet_bytes = bytes()
-    message = {}
+    message = []
     # Verificar si la cadena limpia tiene una longitud par
     if len(cleaned_packet) % 2 != 0:
         print(
@@ -174,7 +175,7 @@ def data_item_28(packet) -> dict:
         MD5_length = 1*SUM+4*PMN+6*POS+2*GA+2*EM1+1*TOS+1*XP
 
         r = MD5_decoder(packet_bytes[:MD5_length], items_indicator)
-        message["MD5"] = r
+        message.append(r)
         packet_bytes = packet_bytes[MD5_length:]  # pop from the list
 
     if M5N:
@@ -195,18 +196,20 @@ def data_item_28(packet) -> dict:
         items_indicator |= FOM
         M5N_length = 1*SUM+4*PMN+6*POS+2*GA+2*EM1+1*TOS+1*XP+1*FOM
         r = M5E_decoder(packet_bytes[:M5N_length], items_indicator)
-        message["M5E"] = r
+        message.append(r)
         packet_bytes = packet_bytes[M5N_length:]
 
     if M4E:
         FOEFRI = packet_bytes[0] & 0b00000110 >> 1
         # assume fx is 0
-        message["M4E"] = {"Indication Foe/Friend (Mode4)":
-                          ["No Mode 4 identification",
-                           "possibly friendly target",
-                           "probably friendly target",
-                           "friendly target"][FOEFRI]
-                          }
+        r = {"name": "M4E",
+             "Indication Foe/Friend (Mode4)":
+             ["No Mode 4 identification",
+              "possibly friendly target",
+              "probably friendly target",
+              "friendly target"][FOEFRI]
+             }
+        message.append(r)
         packet_bytes = packet_bytes[1:]
 
     if RPC:
@@ -219,14 +222,18 @@ def data_item_28(packet) -> dict:
         # assume fx is 0
         RPC_length = 1*SCO+2*SCR+2*RW+2*AR
         r = RPC_decoder(packet_bytes[:RPC_length], items_indicator)
-        message["RPC"] = r
+        message.append(r)
         packet_bytes = packet_bytes[RPC_length:]
 
     if ERR:
         RHO = packet_bytes[:3]
         RHO = int.from_bytes(RHO, byteorder='big')
         RHO /= 256
-        message["ERR"] = RHO
+        r = {
+            "name": "ERR",
+            "RHO": packet_bytes[3]
+        }
+        message.append(r)
 
         # there should be no more bytes left
     return message

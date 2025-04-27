@@ -175,9 +175,8 @@ def data_item_10(packet) -> (list | None):
         print(f"Error al convertir el paquete hexadecimal: {e}")
         return None
 
-    rep = packet_bytes[0]
     bds = []
-    packet_bytes = packet_bytes[1:]
+    packet_bytes = packet_bytes[1:] # ignore first byte (REP)
     for i in range(0, len(packet_bytes), 8):
         bdsdata = packet_bytes[i:i+7]           # bytes
         bds12 = packet_bytes[i+7]
@@ -187,4 +186,4 @@ def data_item_10(packet) -> (list | None):
             # not needed subcamp, just ignore
             continue
         bds.append(bdsdata)
-    return [rep, bds]
+    return bds

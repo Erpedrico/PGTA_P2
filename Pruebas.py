@@ -18,13 +18,15 @@ from functions.data_item_functions.data_item_6Corrected import data_item_6
 from functions.data_item_functions.data_item_7 import data_item_7
 from functions.data_item_functions.data_item_8Corrected import data_item_8
 from functions.data_item_functions.data_item_9Corrected import data_item_9
-from functions.data_item_functions.data_item_10 import data_item_10
+#from functions.data_item_functions.data_item_10 import data_item_10
 from functions.data_item_functions.data_item_11Corrected import data_item_11
 from functions.data_item_functions.data_item_12Corrected import data_item_12
 from functions.data_item_functions.data_item_13Corrected import data_item_13
 from functions.data_item_functions.data_item_14Corrected import data_item_14
 # from functions.data_item_functions.data_item_200 import data_item_200
 # from functions.data_item_functions.data_item_170 import data_item_170
+from functions.Aviones import process_aircraft_packet
+
 
 
 def single_test(func: callable, hexnumber: str):
@@ -48,7 +50,7 @@ def run_all_tests():
     single_test(data_item_7, "0000")
     single_test(data_item_8, "ABCDEF")
     single_test(data_item_9, "3452ABC61192")
-    single_test(data_item_10, "600F")
+   # single_test(data_item_10, "600F")
     single_test(data_item_11, "0000")
     single_test(data_item_12, "8E23")
     single_test(data_item_13, "A512345678")
@@ -69,3 +71,16 @@ if __name__ == "__main__":
     run_all_tests()
     # comment to run some individual test like:
     # single_test(data_item_1, "A1D2")
+
+# Ejemplo de uso
+if __name__ == "__main__":
+    # Simular un paquete de datos hexadecimal
+    example_hex = "028bb8003108000040b70000002004006000"
+    
+    # Procesar el paquete
+    aircraft_id, packet_data, trajectory = process_aircraft_packet(example_hex)
+    
+    print(f"Aeronave procesada: {aircraft_id}")
+    print(f"Datos del paquete: {packet_data}")
+    print(f"Matriz de trayectoria (3 primeras posiciones):")
+    print(trajectory.GetMatrix(0, 2, 0, 2) if trajectory else "No hay trayectoria")

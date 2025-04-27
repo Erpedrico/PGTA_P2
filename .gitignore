@@ -1,7 +1,0 @@
-__pycache__/
-*/__pycache__/
-__pycache__/*
-.venv/
-UI/dist/
-UI/node_modules/
-functions/add_file.py

@@ -51,23 +51,6 @@ def filtrar_altitud_maxima(df: pd.DataFrame, max_altitud_ft: float) -> pd.DataFr
     )
     return df[condicion].copy()
 
-def corregir_qnh(df: pd.DataFrame, qnh_actual: float = 1013.25) -> pd.DataFrame:
-
-    #Corrige la altitud Mode C usando QNH 
-    #Fórmula: Altitud_real = Altitud_ModeC + (QNH_actual - 1013.25) * 30
-    
-    df_corregido = df.copy()
-    qnh_estandar = 1013.25
-    
-    # Aplicar corrección solo si está por debajo de 6000 ft 
-    condicion = (df['ModeC_corrected'].notna()) & (df['ModeC_corrected'] <= 6000)
-    
-    df_corregido.loc[condicion, 'ModeC_corrected'] = (
-        df.loc[condicion, 'ModeC_corrected'] + (qnh_actual - qnh_estandar) * 30
-    )
-    
-    return df_corregido
-
 
 # FILTROS GEOGRÁFICOS (LATITUD, LONGITUD)
 
@@ -118,17 +101,13 @@ def aplicar_filtros(
             df_filtrado = eliminar_transponder_fijo(df_filtrado)
         
         if config.get("eliminar_on_ground", False):
-            df_filtrado = eliminar_on_ground(df_filtrado)
+            df_filtrado = eliminar_on_ground(df_filtrado)    
         
-        # 2. Corrección QNH (antes de filtrar por altitud)
-        if "qnh_correccion" in config:
-            df_filtrado = corregir_qnh(df_filtrado, config["qnh_correccion"])
-        
-        # 3. Filtro de altitud
+        # 2. Filtro de altitud
         if "altitud_maxima_ft" in config:
             df_filtrado = filtrar_altitud_maxima(df_filtrado, config["altitud_maxima_ft"])
         
-        # 4. Filtro geográfico
+        # 3. Filtro geográfico
         if config.get("filtrar_por_area", {}).get("activo", False):
             area = config["filtrar_por_area"]
             df_filtrado = filtrar_por_area(

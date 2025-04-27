@@ -7,6 +7,7 @@ from functions.add_file import add_file
 from functions.filter import aplicar_filtros
 from functions.extract_data_fields import extract_data_fields
 from functions.extract_data import extraer_datos
+from functions.Posiciones import process_dataframe_to_trajectories
 import pandas as pd
 from tkinter import simpledialog
 import csv
@@ -370,6 +371,20 @@ btn_exportar = ttk.Button(
 )
 btn_exportar.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
 
+########################### Posiciones ######################################
+#Le pasamos la dataframe que se esta usando en el momento a Posiciones
+def iniciarPosiciones():
+   
+    global current_df  
+    
+    if current_df is None or current_df.empty:
+        messagebox.showerror("Error", "No hay datos cargados")
+        return
+    
+    # Procesa el DataFrame completo
+    posiciones_df = process_dataframe_to_trajectories(current_df)
+
+
 # --------------------- ESTILOS Y APARIENCIA ---------------------
 style = ttk.Style()
 style.theme_use('clam')
@@ -408,6 +423,10 @@ def mostrar_carga(mensaje):
 def ocultar_carga(ventana_carga):
     ventana_carga.grab_release()
     ventana_carga.destroy()
+
+
+
+    
 
 
 

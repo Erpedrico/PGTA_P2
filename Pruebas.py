@@ -25,7 +25,7 @@ from functions.data_item_functions.data_item_13Corrected import data_item_13
 from functions.data_item_functions.data_item_14Corrected import data_item_14
 # from functions.data_item_functions.data_item_200 import data_item_200
 # from functions.data_item_functions.data_item_170 import data_item_170
-from functions.Aviones import process_aircraft_packet
+from functions.Posiciones import process_aircraft_packet
 
 
 
@@ -72,15 +72,3 @@ if __name__ == "__main__":
     # comment to run some individual test like:
     # single_test(data_item_1, "A1D2")
 
-# Ejemplo de uso
-if __name__ == "__main__":
-    # Simular un paquete de datos hexadecimal
-    example_hex = "028bb8003108000040b70000002004006000"
-    
-    # Procesar el paquete
-    aircraft_id, packet_data, trajectory = process_aircraft_packet(example_hex)
-    
-    print(f"Aeronave procesada: {aircraft_id}")
-    print(f"Datos del paquete: {packet_data}")
-    print(f"Matriz de trayectoria (3 primeras posiciones):")
-    print(trajectory.GetMatrix(0, 2, 0, 2) if trajectory else "No hay trayectoria")

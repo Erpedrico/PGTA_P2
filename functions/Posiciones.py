@@ -27,7 +27,7 @@ def process_aircraft_packet(hex_data: str) -> Tuple[str, Dict[str, Any], Optiona
     # DECODIFICACIÓN
     packet_data = decode_packet_data(hex_data)  # Extrae campos básicos
     
-    # Gestión robusta de timestamps
+    # Gestión de timestamps
     if 'TIME' not in packet_data or packet_data['TIME'] == "Not Found":
         packet_data['timestamp'] = datetime.now()  # Usa hora actual si no hay timestamp
     else:
@@ -35,7 +35,7 @@ def process_aircraft_packet(hex_data: str) -> Tuple[str, Dict[str, Any], Optiona
             # Parsea el formato HH:MM:SS.mmm
             packet_data['timestamp'] = datetime.strptime(packet_data['TIME'], "%H:%M:%S.%f")
         except ValueError:
-            packet_data['timestamp'] = datetime.now()  # Fallback si el parsing falla
+            packet_data['timestamp'] = datetime.now()  
 
     # IDENTIFICACIÓN
     aircraft_id = generate_aircraft_id(packet_data)  # Crea ID único
@@ -50,7 +50,7 @@ def process_aircraft_packet(hex_data: str) -> Tuple[str, Dict[str, Any], Optiona
 
 def decode_packet_data(hex_data: str) -> Dict[str, Any]:
     
-    #Decodifica el paquete hexadecimal y convierte coordenadas geodésicas a cartesianas.
+    #Decodifica el paquete  y convierte coordenadas geodésicas a cartesianas.
     
     raw_data = extraer_datos(hex_data)  
 
@@ -64,9 +64,9 @@ def decode_packet_data(hex_data: str) -> Dict[str, Any]:
         coord_wgs = CoordinatesWGS84(np.radians(lat), np.radians(lon), alt)
         coord_xyz = geo_utils.change_geodesic_to_geocentric(coord_wgs)
         
-        # Añade las nuevas coordenadas al diccionario
+        # Añade las nuevas coordenadas al registro
         raw_data.update({
-            "X": coord_xyz.X,  # Coordenada X (metros)
+            "X": coord_xyz.X,  # Coordenada xX (metros)
             "Y": coord_xyz.Y,  # Coordenada Y (metros)
             "Z": coord_xyz.Z   # Coordenada Z (metros)
         })
@@ -92,10 +92,11 @@ def create_trajectory_matrix(aircraft_id: str) -> Optional[GeneralMatrix]:
     
     return GeneralMatrix(coords)
 
+#EN CONTRUCCION
+"""
 def get_aircraft_position(aircraft_id: str, timestamp: datetime = None) -> Optional[Dict[str, Any]]:
     
     #Obtiene la posición de un avión en un momento específico.
-    
     
     # Validaciones iniciales
     if aircraft_id not in aircraft_data:
@@ -127,7 +128,7 @@ def get_aircraft_position(aircraft_id: str, timestamp: datetime = None) -> Optio
         'heading': data['movement']['heading'][idx] if data['movement']['heading'].size > idx else None
     }
 
-
+"""
 
 
 

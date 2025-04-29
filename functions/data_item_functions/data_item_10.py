@@ -1,189 +1,119 @@
 """
-Data Item I048/250, BDS Register Data
+Data Item I048/250 - BDS Register Data
+Implementación exacta según estructura C# con tus nombres de campos
 """
 
-
-def _4_0(bdsdata: bytes) -> dict:
-    # 4,0 Selected vertical intention
-    ranges = {
-        "STATUS1": [1, 1],
-        "MCPFCU_SELECTED_ALTITUDE": [2, 13],
-        "STATUS2": [14, 14],
-        "FMS_SELECTED_ALTITUDE": [15, 26],
-        "STATUS3": [27, 27],
-        "BARO_PRESSURE_SETTING": [28, 39],
-        "STATUS_MCPFCU_MODE": [48, 48],
-        "VNAV": [49, 49],
-        "ALT_HOLD": [50, 50],
-        "APPROACH": [51, 51],
-        "STATUS_TARGET_ALT_SRC": [54, 54],
-        "TARGET_ALT_SRC": [55, 56],
-    }
-    # info in number format
-    r = ranges_to_bytes(bdsdata, ranges)
-    return {
-        "name": "Selected vertical intention",
-        "MCP/FCU selected altitude": str(r["MCPFCU_SELECTED_ALTITUDE"]*16) + " ft" if r["STATUS1"] else "N/A",
-        "FMS selected altitude": str(r["FMS_SELECTED_ALTITUDE"]*16) + " ft" if r["STATUS2"] else "N/A",
-        # added 800 as base!
-        "Barometric pressure setting": str(r["BARO_PRESSURE_SETTING"] * 0.1 + 800) + " mb" if r["STATUS3"] else "N/A",
-        "VNAV mode": ["Not active", "Active"][r["VNAV"]] if r["STATUS_MCPFCU_MODE"] else "N/A",
-        "Altitude hold mode": ["Not active", "Active"][r["ALT_HOLD"]] if r["STATUS_MCPFCU_MODE"] else "N/A",
-        "Approach mode": ["Not active", "Active"][r["APPROACH"]] if r["STATUS_MCPFCU_MODE"] else "N/A",
-        "Target altitude source": ["Unknown",
-                                   "Aircraft altitude",
-                                   "FCU/MCP selected altitude",
-                                   "FMS selected altitude"][r["TARGET_ALT_SRC"]] if r["STATUS_TARGET_ALT_SRC"] else "N/A"
-    }
-
-
-def _5_0(bdsdata: bytes) -> dict:
-    # 5,0 Track and turn report
-    ranges = {
-        "STATUS1": [1, 1],
-        "SIGN1": [2, 2],
-        "ROLL_ANGLE": [3, 11],
-        "STATUS2": [12, 12],
-        "SIGN2": [13, 13],
-        "TRUE_TRACK_ANGLE": [14, 23],
-        "STATUS3": [24, 24],
-        "GROUND_SPEED": [25, 34],
-        "STATUS4": [35, 35],
-        "SIGN4": [36, 36],
-        "TRACK_ANGLE_RATE": [37, 45],
-        "STATUS5": [46, 46],
-        "TRUE_AIRSPEED": [47, 56]
-    }
-    # info in number format
-    r = ranges_to_bytes(bdsdata, ranges)
-    return {
-        "name": "Track and turn report",
-        "Roll angle": ("-" if r["SIGN1"] else "") + str(r["ROLL_ANGLE"]*45/256) + "°" if r["STATUS1"] else "N/A",
-        "True track angle": ("-" if r["SIGN2"] else "") + str(r["TRUE_TRACK_ANGLE"]*90/512) + "°" if r["STATUS2"] else "N/A",
-        "Ground speed": str(r["GROUND_SPEED"]*2) + " kt" if r["STATUS3"] else "N/A",
-        "Track angle rate": ("-" if r["SIGN4"] else "") + str(r["TRACK_ANGLE_RATE"]*8/256) + "°/s" if r["STATUS4"] else "N/A",
-        "True airspeed": str(r["TRUE_AIRSPEED"]*2) + " kt" if r["STATUS5"] else "N/A"
-    }
-
-
-def _6_0(bdsdata: bytes) -> dict:
-    # 6,0 Heading and speed report
-    ranges = {
-        "STATUS1": [1, 1],
-        "SIGN1": [2, 2],
-        "MAGNETIC_HEADING": [3, 12],
-        "STATUS2": [13, 13],
-        "INDICATED_AIRSPEED": [14, 23],
-        "STATUS3": [24, 24],
-        "MACH": [25, 34],
-        "STATUS4": [35, 35],
-        "SIGN4": [36, 36],
-        "BARO_ALT_RATE": [37, 45],
-        "STATUS5": [46, 46],
-        "SIGN5": [47, 47],
-        "INERTIAL_VERTICAL_VELOCITY": [48, 56]
-    }
-    # info in number format
-    r = ranges_to_bytes(bdsdata, ranges)
-    return {
-        "name": "Heading and speed report",
-        "Magnetic heading": ("-" if r["SIGN1"] else "") + str(r["MAGNETIC_HEADING"]*90/512) + "°" if r["STATUS1"] else "N/A",
-        "Indicated airspeed": str(r["INDICATED_AIRSPEED"]) + " kt" if r["STATUS2"] else "N/A",
-        "Mach": str(r["MACH"]*0.004) if r["STATUS3"] else "N/A",  # 2.048/256
-        "Barometric altitude rate": ("-" if r["SIGN4"] else "") + str(r["BARO_ALT_RATE"]*32) + " ft/min" if r["STATUS4"] else "N/A",
-        "Inertial vertical velocity": ("-" if r["SIGN5"] else "") + str(r["INERTIAL_VERTICAL_VELOCITY"]*32) + " ft/min" if r["STATUS5"] else "N/A"
-    }
-
-
-def ranges_to_bytes(bdsdata: bytes, ranges: dict) -> dict:
-    r = {}
-    for key, value in ranges.items():
-        start, end = value
-        # Extract the relevant bits from BDSDATA
-        extracted_bits = extract_bit(bdsdata, start, end)
-        # Convert the extracted bits to an integer
-        # Store the integer value in the dictionary
-        r[key] = extracted_bits
-    return r
-
-
-def extract_bit(data: bytes, start: int, end: int) -> int:
+def data_item_10(packet: str) -> list:
     """
-    Extracts bits [start,end] from a byte array and returns the value as an integer.
-    """
+    Procesa el Data Item I048/250 (BDS Register Data)
+    Devuelve: [REP, (12 campos BDS4.0), (10 campos BDS5.0), (10 campos BDS6.0)]
 
-    # Calculate which bytes are relevant
-    byte_start = start // 8
-    byte_end = end // 8
-    relevant_bytes = data[byte_start:byte_end + 1]
-
-    # Convert to int
-    value = int.from_bytes(relevant_bytes, byteorder='big')
-
-    # Drop trailing bits, end being odd
-    trailing_bits = (8 * (byte_end + 1)) - (end + 1)
-    value >>= trailing_bits
-
-    # Mask to get exact bits
-    bit_length = end - start + 1
-    mask = (1 << bit_length) - 1  # bit_length number of 1s
-    result_int = value & mask
-
-    return result_int
-
-
-def decode(bdsdata: bytes, bdscode: int) -> (list | None):
-    """
-    BDS(7bytes), BDSCODE 0-255
     """
     try:
-        if bdscode == 0x40:
-            return _4_0(bdsdata)
-        elif bdscode == 0x50:
-            return _5_0(bdsdata)
-        elif bdscode == 0x60:
-            return _6_0(bdsdata)
-        else:
-            return None
-    except Exception as e:
-        print(f"Error decoding BDS data: {e}")
-        return None
+        # Limpieza básica del paquete
+        cleaned = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
+        if len(cleaned) % 2 != 0:
+            return ["0"] + ["Not found"]*32
+        
+        packet_bytes = bytes.fromhex(cleaned)
+        if len(packet_bytes) < 1:
+            return ["0"] + ["Not found"]*32
+
+        rep = packet_bytes[0]
+        result = [str(rep)]
+        packet_bytes = packet_bytes[1:]
+
+        # Bandera para cada BDS
+        has_bds40, has_bds50, has_bds60 = False, False, False
+
+        for _ in range(rep):
+            if len(packet_bytes) < 8:
+                break
+
+            bds_data = packet_bytes[:7]
+            bds_code = packet_bytes[7]
+            packet_bytes = packet_bytes[8:]
+
+            bds1 = (bds_code >> 4) & 0x0F
+            bds2 = bds_code & 0x0F
+
+            if bds1 == 4 and bds2 == 0 and not has_bds40:
+                # Decodificación BDS 4.0 
+                data = int.from_bytes(bds_data, 'big')
+                result.extend([
+                    "1" if (data >> 55) & 0b1 else "0",       # MCP_STATUS (bit 55)
+                    str(((data >> 43) & 0xFFF) * 16),         # MCP_ALT (bits 43-54)
+                    "1" if (data >> 42) & 0b1 else "0",       # FMS_STATUS (bit 42)
+                    str(((data >> 30) & 0xFFF) * 16),         # FMS_ALT (bits 30-41)
+                    "1" if (data >> 29) & 0b1 else "0",       # BP_STATUS (bit 29)
+                    f"{((data >> 17) & 0xFFF) * 0.1 + 800.0:.1f}",  # BP_VALUE (bits 17-28)
+                    "1" if (data >> 8) & 0b1 else "0",        # MODE_STATUS (bit 8)
+                    "1" if (data >> 7) & 0b1 else "0",        # VNAV (bit 7)
+                    "1" if (data >> 6) & 0b1 else "0",        # ALTHOLD (bit 6)
+                    "1" if (data >> 5) & 0b1 else "0",        # APP (bit 5)
+                    "1" if (data >> 2) & 0b1 else "0",        # TARGETALT_STATUS (bit 2)
+                    ["Unknown", "Aircraft", "FCU/MCP", "FMS"][data & 0b11]  # TARGETALT_SOURCE (bits 0-1)
+                ])
+                has_bds40 = True
+
+            elif bds1 == 5 and bds2 == 0 and not has_bds50:
+                # Decodificación BDS 5.0 
+                data = int.from_bytes(bds_data, 'big')
+                result.extend([
+                    "1" if (data >> 55) & 0b1 else "0",       # ROLL_STATUS (bit 55)
+                    f"{(-1 if (data >> 54) & 0b1 else 1) * ((data >> 45) & 0x1FF) * (45.0/256.0):.3f}",  # ROLL_ANGLE (bits 45-53 + signo 54)
+                    "1" if (data >> 44) & 0b1 else "0",       # TRACK_STATUS (bit 44)
+                    f"{(-1 if (data >> 43) & 0b1 else 1) * ((data >> 33) & 0x3FF) * (90.0/512.0):.3f}",  # TRUE_TRACK (bits 33-42 + signo 43)
+                    "1" if (data >> 32) & 0b1 else "0",       # GROUNDSPEED_STATUS (bit 32)
+                    str(((data >> 22) & 0x3FF) * 2),          # GROUNDSPEED  (bits 22-31)
+                    "1" if (data >> 21) & 0b1 else "0",       # TRACKRATE_STATUS (bit 21)
+                    f"{(-1 if (data >> 20) & 0b1 else 1) * ((data >> 11) & 0x1FF) * (8.0/256.0):.3f}",  # TRACK_RATE (bits 11-19 + signo 20)
+                    "1" if (data >> 10) & 0b1 else "0",       # AIRSPEED_STATUS (bit 10)
+                    str((data & 0x3FF) * 2)                   # TRUE_AIRSPEED (bits 0-9)
+                ])
+                has_bds50 = True
+
+            elif bds1 == 6 and bds2 == 0 and not has_bds60:
+                # Decodificación BDS 6.0
+                data = int.from_bytes(bds_data, 'big')
+                result.extend([
+                    "1" if (data >> 55) & 0b1 else "0",       # HEADING_STATUS (bit 55)
+                    f"{(-1 if (data >> 54) & 0b1 else 1) * ((data >> 44) & 0x3FF) * (90.0/512.0):.6f}",  # MAG_HEADING (bits 44-53 + signo 54)
+                    "1" if (data >> 43) & 0b1 else "0",       # IAS_STATUS (bit 43)
+                    str((data >> 33) & 0x3FF),                # IAS (bits 33-42)
+                    "1" if (data >> 32) & 0b1 else "0",       # MACH_STATUS (bit 32)
+                    f"{((data >> 22) & 0x3FF) * (2.048/512.0):.3f}",  # MACH (bits 22-31)
+                    "1" if (data >> 21) & 0b1 else "0",       # BARO_RATE_STATUS (bit 21)
+                    str(int((-1 if (data >> 20) & 0b1 else 1) * ((data >> 11) & 0x1FF) * 32)),  # BARO_RATE (bits 11-19 + signo 20)
+                    "1" if (data >> 10) & 0b1 else "0",       # INERTIAL_VERT_STATUS (bit 10)
+                    str(int((-1 if (data >> 9) & 0b1 else 1) * (data & 0x1FF) * 32))  # INERTIAL_VERT_VEL (bits 0-8 + signo 9)
+                ])
+                has_bds60 = True
+
+        # Rellenar con Not found los BDS no encontrados
+        if not has_bds40:
+            result.extend(["Not found"]*12)
+        if not has_bds50:
+            result.extend(["Not found"]*10)
+        if not has_bds60:
+            result.extend(["Not found"]*10)
+
+        return result
+
+    except Exception:
+        return ["0"] + ["Not found"]*32  # REP=0 + 32 campos Not found en caso de error
 
 
-def data_item_10(packet) -> (list | None):
-    """
-    input: [REP(1byte), [[BDS(7bytes), BDS1(4bit), BDS2(4bit)]...]]
-    output: [REP(1byte), [BDS(decoded as dict), ...]]
-    """
-    cleaned_packet = "".join(
-        c for c in packet if c in "0123456789abcdefABCDEF")
-    if len(cleaned_packet) % 2 != 0:
-        print(
-            f"Error: La cadena hexadecimal tiene longitud impar: {cleaned_packet}")
-        return None
 
-    if (len(cleaned_packet) - 2) % 16 != 0:
-        print(
-            f"Error: El paquete debe tener 1+8x octetos. Longitud actual: {len(cleaned_packet)}")
-        return None
 
-    packet_bytes = bytes()
-    # convert to bytes
-    try:
-        packet_bytes = bytes.fromhex(cleaned_packet)
-    except ValueError as e:
-        print(f"Error al convertir el paquete hexadecimal: {e}")
-        return None
 
-    bds = []
-    packet_bytes = packet_bytes[1:] # ignore first byte (REP)
-    for i in range(0, len(packet_bytes), 8):
-        bdsdata = packet_bytes[i:i+7]           # bytes
-        bds12 = packet_bytes[i+7]
-        # Tables are numbered A-2-X where “X” is the decimal equivalent of the BDS code Y/Z. Y is the BDS1 code and Z is the BDS2 code used to access the data format for a particular register.
-        bdsdata_decoded = decode(bdsdata, bds12)
-        if bdsdata_decoded is None:
-            # not needed subcamp, just ignore
-            continue
-        bds.append(bdsdata)
-    return bds
+
+
+
+
+
+
+
+
+
+

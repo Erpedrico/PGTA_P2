@@ -88,7 +88,15 @@ btn_mapa_webview.grid(row=0, column=5, padx=5, pady=5, sticky="ew")
 
 # --------------------- Lista de columnas ---------------------
 columnas_datos = [
-    "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description", "Validated", "Garbled", "CodeSource", "Mode3ACode", "Validated_FL", "Garbled_FL", "FL", "Address", "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING","LAT", "LON", "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A","B1B", "RHO", "THETA"
+    "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description", "Validated", "Garbled", "CodeSource", "Mode3ACode", "Validated_FL", "Garbled_FL", "FL", "Address", "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING","LAT", "LON", "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A","B1B", "RHO", "THETA", #DATA ITEM 250
+       
+       #DATA ITEM 250
+        "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
+        "MODE_STATUS", "VNAV", "ALTHOLD", "APP", "TARGETALT_STATUS", "TARGETALT_SOURCE",
+        "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
+        "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
+        "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
+        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
 ]
 
 # ⚠️ AÑADIMOS columna "Hex (Raw)" justo después de LEN
@@ -160,7 +168,15 @@ def extraer_datos_tabla():
         "Garbled_FL", "FL", "Address", "ID", "BDS", "TRACK NUMBER", 
         "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING", "LAT", "LON",
         "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B",
-        "RHO", "THETA"
+        "RHO", "THETA",
+        #DATA ITEM 250
+        "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
+        "MODE_STATUS", "VNAV", "ALTHOLD", "APP", "TARGETALT_STATUS", "TARGETALT_SOURCE",
+        "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
+        "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
+        "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
+        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
+
     ]
     
     for item in tabla.get_children():
@@ -298,7 +314,44 @@ def actualizar_tabla(df):
             row.get("B1A", ""),
             row.get("B1B", ""),
             row.get("RHO", ""),
-            row.get("THETA", "")
+            row.get("THETA", ""),
+            # Columnas del Data Item 250 
+            row.get("BDS_REP", ""),
+            # BDS 4.0
+            row.get("MCP_STATUS", ""),
+            row.get("MCP_ALT", ""),
+            row.get("FMS_STATUS", ""),
+            row.get("FMS_ALT", ""),
+            row.get("BP_STATUS", ""),
+            row.get("BP_VALUE", ""),
+            row.get("MODE_STATUS", ""),
+            row.get("VNAV", ""),
+            row.get("ALTHOLD", ""),
+            row.get("APP", ""),
+            row.get("TARGETALT_STATUS", ""),
+            row.get("TARGETALT_SOURCE", ""),
+            # BDS 5.0
+            row.get("ROLL_STATUS", ""),
+            row.get("ROLL_ANGLE", ""),
+            row.get("TRACK_STATUS", ""),
+            row.get("TRUE_TRACK", ""),
+            row.get("GROUNDSPEED_STATUS", ""),
+            row.get("GROUNDSPEED", ""),
+            row.get("TRACKRATE_STATUS", ""),
+            row.get("TRACK_RATE", ""),
+            row.get("AIRSPEED_STATUS", ""),
+            row.get("TRUE_AIRSPEED", ""),
+            # BDS 6.0
+            row.get("HEADING_STATUS", ""),
+            row.get("MAG_HEADING", ""),
+            row.get("IAS_STATUS", ""),
+            row.get("IAS", ""),
+            row.get("MACH_STATUS", ""),
+            row.get("MACH", ""),
+            row.get("BARO_RATE_STATUS", ""),
+            row.get("BARO_RATE", ""),
+            row.get("INERTIAL_VERT_STATUS", ""),
+            row.get("INERTIAL_VERT_VEL", "")
         ]
         tabla.insert("", "end", values=valores)
 

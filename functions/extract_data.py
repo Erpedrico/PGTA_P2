@@ -7,7 +7,7 @@ from functions.data_item_functions.data_item_6Corrected import data_item_6
 from functions.data_item_functions.data_item_7 import data_item_7
 from functions.data_item_functions.data_item_8Corrected import data_item_8
 from functions.data_item_functions.data_item_9Corrected import data_item_9
-#from functions.data_item_functions.data_item_10 import data_item_10
+from functions.data_item_functions.data_item_10 import data_item_10
 from functions.data_item_functions.data_item_11Corrected import data_item_11
 from functions.data_item_functions.data_item_12Corrected import data_item_12
 from functions.data_item_functions.data_item_13Corrected import data_item_13
@@ -220,36 +220,63 @@ def extraer_datos(datos_hex):
             resultado = data_item_9(data_item_bytes)
             campos["ID"] = str(resultado)
             
-        elif item == 10:
-            # Verificamos si la longitud de packet_bytes es suficiente para evitar un error de índice
-            if len(packet_bytes) > 0:  # Si hay al menos un byte disponible
-                first_octet = packet_bytes[0]
-                
-                # Convertimos el primer octeto a int
-                first_octet = int(first_octet)  # Ya es un número entero
-                
-                # Ajustamos el valor del primer octeto sumando 1 (según tu lógica)
-                first_octet = first_octet*8+1
-                
-                # Verificamos que la longitud del paquete es suficiente para evitar acceso fuera de rango
-                if first_octet > len(packet_bytes):
-                    print(f"Error: Intentando extraer más bytes de los que el paquete tiene. Longitud del paquete: {len(packet_bytes)}")
-                    continue  # Salta al siguiente ciclo en el código
-
-                # Extraemos los primeros 'first_octet' bytes
-                data_item_bytes = packet_bytes[:first_octet].hex()  # Extraemos los primeros 'first_octet' bytes en formato hexadecimal
-                
-                # Actualizamos packet_bytes para eliminar los bytes ya procesados
-                packet_bytes = packet_bytes[first_octet:]
-                
-                print(f"Bytes extraídos: {data_item_bytes}")
-                print(f"Bytes restantes en packet_bytes: {packet_bytes.hex()}")
-                
-            else:
-                print("El paquete no tiene bytes suficientes para procesar el item 10.")
-                print(f"Longitud actual de packet_bytes: {len(packet_bytes)}")
-                continue  # Salta al siguiente ciclo en el código
             
+        elif item == 10:  # Data Item I048/250
+            # Leer REP (1 byte) + 8 bytes por registro
+            if len(packet_bytes) < 1:
+                continue
+                
+            rep = packet_bytes[0]
+            total_length = 1 + rep * 8
+            
+            if len(packet_bytes) >= total_length:
+                hex_str = packet_bytes[:total_length].hex()
+                packet_bytes = packet_bytes[total_length:]
+                
+                # Decodificar el Data Item 250
+                bds_data = data_item_10(hex_str)
+                
+                # Mapear a los campos 
+                if len(bds_data) >= 33:  # REP + 12 + 10 + 10
+                    campos.update({
+                        "BDS_REP": bds_data[0],
+                        # BDS 4,0
+                        "MCP_STATUS": bds_data[1],
+                        "MCP_ALT": bds_data[2],
+                        "FMS_STATUS": bds_data[3],
+                        "FMS_ALT": bds_data[4],
+                        "BP_STATUS": bds_data[5],
+                        "BP_VALUE": bds_data[6],
+                        "MODE_STATUS": bds_data[7],
+                        "VNAV": bds_data[8],
+                        "ALTHOLD": bds_data[9],
+                        "APP": bds_data[10],
+                        "TARGETALT_STATUS": bds_data[11],
+                        "TARGETALT_SOURCE": bds_data[12],
+                        # BDS 5,0
+                        "ROLL_STATUS": bds_data[13],
+                        "ROLL_ANGLE": bds_data[14],
+                        "TRACK_STATUS": bds_data[15],
+                        "TRUE_TRACK": bds_data[16],
+                        "GROUNDSPEED_STATUS": bds_data[17],
+                        "GROUNDSPEED": bds_data[18],
+                        "TRACKRATE_STATUS": bds_data[19],
+                        "TRACK_RATE": bds_data[20],
+                        "AIRSPEED_STATUS": bds_data[21],
+                        "TRUE_AIRSPEED": bds_data[22],
+                        # BDS 6,0
+                        "HEADING_STATUS": bds_data[23],
+                        "MAG_HEADING": bds_data[24],
+                        "IAS_STATUS": bds_data[25],
+                        "IAS": bds_data[26],
+                        "MACH_STATUS": bds_data[27],
+                        "MACH": bds_data[28],
+                        "BARO_RATE_STATUS": bds_data[29],
+                        "BARO_RATE": bds_data[30],
+                        "INERTIAL_VERT_STATUS": bds_data[31],
+                        "INERTIAL_VERT_VEL": bds_data[32]
+                    })
+                    
         elif item == 11:
             print(len(packet_bytes))
             data_item_bytes_11 = packet_bytes[:2].hex()

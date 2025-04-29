@@ -18,14 +18,14 @@ from functions.data_item_functions.data_item_6Corrected import data_item_6
 from functions.data_item_functions.data_item_7 import data_item_7
 from functions.data_item_functions.data_item_8Corrected import data_item_8
 from functions.data_item_functions.data_item_9Corrected import data_item_9
-#from functions.data_item_functions.data_item_10 import data_item_10
+from functions.data_item_functions.data_item_10 import data_item_10
 from functions.data_item_functions.data_item_11Corrected import data_item_11
 from functions.data_item_functions.data_item_12Corrected import data_item_12
 from functions.data_item_functions.data_item_13Corrected import data_item_13
 from functions.data_item_functions.data_item_14Corrected import data_item_14
 # from functions.data_item_functions.data_item_200 import data_item_200
 # from functions.data_item_functions.data_item_170 import data_item_170
-from functions.Posiciones import process_aircraft_packet
+
 
 
 
@@ -71,4 +71,8 @@ if __name__ == "__main__":
     run_all_tests()
     # comment to run some individual test like:
     # single_test(data_item_1, "A1D2")
+
+test_data = ""  
+result = data_item_10(test_data)
+print("ESTEEEEEEEEEEEEEEEE: ", result)
 

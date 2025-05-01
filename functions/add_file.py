@@ -1,57 +1,75 @@
-import struct
 from tkinter import filedialog, messagebox
-from functions.extract_packets import parse_binary_file
 from functions.extract_data import extraer_datos
 
-
+DEBUG = False
 
 def add_file(tabla):
-     
-    file_path = filedialog.askopenfilename(filetypes=[("Archivos binarios", "*.ast"), ("Todos los archivos", "*.*")])
+    file_path = filedialog.askopenfilename(
+        filetypes=[("Archivos binarios", "*.ast"), ("Todos los archivos", "*.*")]
+    )
+
     if not file_path:
         return
 
-   
-
     try:
+        with open(file_path, "rb") as f:
+            data = f.read()
 
-        packets = parse_binary_file(file_path)
+        data_len = len(data)
+        idx = 0
+        packets = []
+
+        append_packet = packets.append
+
+        # Parsear en bloque
+        while idx + 3 <= data_len:
+            packet_len = int.from_bytes(data[idx+1:idx+3], byteorder="big")
+            if packet_len <= 0 or idx + packet_len > data_len:
+                break
+            append_packet(data[idx:idx+packet_len])
+            idx += packet_len
+
 
         if not packets:
             messagebox.showinfo("Archivo vacío", "El archivo seleccionado no contiene paquetes válidos.")
             return
 
-        # Limpiar la tabla antes de agregar nuevos datos
-        for row in tabla.get_children():
-            tabla.delete(row)
+        # Limpiar tabla
+        tabla.delete(*tabla.get_children())
 
-        # Agregar los paquetes a la tabla
+        insert_row = tabla.insert
+        get_value = dict.get
+        extend = list.extend
+
+        columnas = [
+            "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description", "Validated",
+            "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "Mode3ACode", "Address",
+            "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING", "LAT",
+            "LON", "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B", "RHO", "THETA",
+            "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
+            "MODE_STATUS", "VNAV", "ALTHOLD", "APP", "TARGETALT_STATUS", "TARGETALT_SOURCE",
+            "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
+            "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
+            "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
+            "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
+        ]
+
         for i, packet in enumerate(packets):
-            # Asumimos que `packet` es una lista de datos donde los índices representan las columnas
-            cat = packet[0]  # Primer byte = Categoría
-            length = int.from_bytes(packet[1:3], byteorder='big')  # Longitud del paquete (bytes 1-2)
-            datos_hex = packet.hex()[:50] + "..." if len(packet) > 25 else packet.hex()  # Recortar datos largos
-            all_datos_hex = packet.hex()
+            cat = packet[0]
+            length = int.from_bytes(packet[1:3], byteorder='big')
+            hex_data = packet.hex()
 
-            # Tomamos el resto de los datos después del índice 3 (de acuerdo con las nuevas columnas)
-            packet_data = packet[3:]  # El resto de los datos que queremos extraer
-            # Convertimos el paquete a hexadecimal y lo procesamos
-            datos_extraidos = extraer_datos(all_datos_hex)
-
-            # Si no se pudo extraer correctamente los datos, usamos "Not Found" como valor por defecto
+            datos_extraidos = extraer_datos(hex_data)
             if not isinstance(datos_extraidos, dict):
-                datos_extraidos = {col: "Not Found bad" for col in datos_extraidos}
+                datos_extraidos = {}
 
-            # Agregar fila a la tabla con los nuevos datos
-            fila = [i + 1, cat, length, datos_hex] + [datos_extraidos.get(col, "N/A") for col in datos_extraidos]
+            fila = [i + 1, cat, length]
+            extend(fila, (get_value(datos_extraidos, col, "N/A") for col in columnas))
+            insert_row("", "end", values=fila)
 
-            # Insertamos la fila en la tabla
-            tabla.insert("", "end", values=fila)
-       
+
         messagebox.showinfo("Carga exitosa", f"Se han cargado {len(packets)} paquetes.")
         
 
     except Exception as e:
-        messagebox.showerror("Error", f"No se pudo procesar el archivo.\n{str(e)}")
-   
-
+        messagebox.showerror("Error", f"No se pudo procesar el archivo.\n{e}")

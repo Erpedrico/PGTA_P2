@@ -100,7 +100,7 @@ columnas_datos = [
 ]
 
 # ⚠️ AÑADIMOS columna "Hex (Raw)" justo después de LEN
-columnas_tabla = ["Paquete", "CAT", "LEN", "Hex (Raw)"] + columnas_datos
+columnas_tabla = ["Paquete", "CAT", "LEN"] + columnas_datos
 
 # --------------------- GUI Tabla ---------------------
 frame_tabla = tk.Frame(root)
@@ -162,7 +162,7 @@ def extraer_datos_tabla():
     global current_df
     datos = []
     
-    columnas_completas = ["Paquete", "CAT", "LEN", "Hex (Raw)"] + [
+    columnas_completas = ["Paquete", "CAT", "LEN"] + [
         "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description",
         "Validated", "Garbled", "CodeSource", "Mode3ACode", "Validated_FL",
         "Garbled_FL", "FL", "Address", "ID", "BDS", "TRACK NUMBER", 
@@ -278,7 +278,6 @@ def actualizar_tabla(df):
             row.get("Paquete", ""),
             row.get("CAT", ""),
             row.get("LEN", ""),
-            row.get("Hex (Raw)", ""),
             row.get("NUM", ""),
             row.get("SAC", ""),
             row.get("SIC", ""),

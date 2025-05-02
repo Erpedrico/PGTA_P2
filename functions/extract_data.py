@@ -28,27 +28,53 @@ from functools import partial
 
 from math import sin, cos, radians, degrees
 
-# Radio terrestre en metros (WGS-84)
-R = 6378137.0  
+DEBUG=True 
 
-RADAR_LAT = 0  # Ejemplo: latitud de referencia del radar
-RADAR_LON = 0  # Ejemplo: longitud de referencia del radar
+# Coordenadas del radar (convertidas de grados, minutos, segundos a grados decimales)
+RADAR_LAT = 41.30070233
+RADAR_LON = 2.1020582
 
-def convertir_rho_theta_a_latlon(rho, theta_deg, lat0=RADAR_LAT, lon0=RADAR_LON):
+ALTITUD_RADAR = 27.257  # metros
+
+# Radio terrestre en metros
+R = 6371000.0
+
+def convertir_rho_theta_a_latlon(rho_nm, theta_deg):
     """
-    Convierte coordenadas polares (RHO, THETA) a coordenadas geográficas (latitud, longitud)
+    Convierte coordenadas polares (RHO en NM, THETA en grados)
+    a coordenadas geográficas (latitud, longitud), tomando como origen el radar.
     """
+    # Convertimos RHO a metros
+    rho_metros = rho_nm * 1852
+
+    # Convertimos THETA a radianes (ángulo desde el norte, en sentido horario)
     theta_rad = radians(theta_deg)
-    dx = rho * sin(theta_rad)
-    dy = rho * cos(theta_rad)
-    dlat = dy / R
-    dlon = dx / (R * cos(radians(lat0)))
-    lat = lat0 + degrees(dlat)
-    lon = lon0 + degrees(dlon)
+
+    # Descomposición en desplazamiento en el plano (dx hacia el este, dy hacia el norte)
+    dx = rho_metros * sin(theta_rad)
+    dy = rho_metros * cos(theta_rad)
+
+    # Aproximaciones locales para delta lat/lon (válidas para distancias pequeñas)
+    delta_lat = dy / R
+    delta_lon = dx / (R * cos(radians(RADAR_LAT)))
+
+    # Coordenadas finales
+    lat = RADAR_LAT + degrees(delta_lat)
+    lon = RADAR_LON + degrees(delta_lon)
+
     return lat, lon
 
+def calcular_altitud(rho_nm, phi_deg, alt_radar_m=27.257):
+    """
+    Calcula altitud del blanco si tienes RHO (en NM) y ángulo de elevación (en grados).
+    alt_radar_m es la altitud de la antena (elevación + mástil)
+    """
+    rho_m = rho_nm * 1852
+    phi_rad = radians(phi_deg)
+    altitud_objetivo = sin(phi_rad) * rho_m + alt_radar_m
+    return altitud_objetivo
 
-# Constante global (mejor que recrear cada vez)
+# Constante global
 CAMPOS_DEFAULT = dict.fromkeys([
     "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description", "Validated",
     "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "Mode3ACode", "Address",
@@ -61,11 +87,10 @@ CAMPOS_DEFAULT = dict.fromkeys([
         "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
         "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
         "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
-
 ], "Not Found")
 
 # Evitar prints en loops críticos, opcional con log level si se requiere
-DEBUG = False
+DEBUG = True
 
 def extraer_datos(datos_hex):
     campos = CAMPOS_DEFAULT.copy()
@@ -87,10 +112,42 @@ def extraer_datos(datos_hex):
             if handler is not None:
                 packet_bytes = handler(packet_bytes, campos)
 
-    except Exception:
-        pass  # opcional loggear en producción
+        # Calcular LAT y LON a partir de RHO y THETA
+        rho_str = campos.get("RHO", None)
+        theta_str = campos.get("THETA", None)
+
+        if rho_str is not None and theta_str is not None:
+            try:
+                rho = float(rho_str)
+                theta = float(theta_str)
+
+                lat, lon = convertir_rho_theta_a_latlon(rho, theta)
+                campos["LAT"] = lat
+                campos["LON"] = lon
+            except Exception as e:
+                print(f"Error al convertir RHO y THETA: {e}")
+                campos["LAT"] = "Error"
+                campos["LON"] = "Error"
+
+        # Calcular H directamente desde FL
+        fl = campos.get("FL", None)
+        if fl is not None:
+            try:
+                fl_val = float(fl)
+                campos["H"] = round(fl_val * 100 * 0.3048, 2)
+            except Exception as e:
+                print(f"Error al calcular altitud desde FL: {e}")
+                campos["H"] = "Error"
+
+    except Exception as e:
+        print(f"Error en el procesamiento de datos hexadecimales: {e}")
 
     return campos
+
+
+
+
+
 
 # Ejemplo de cómo llamar la función:
 # datos_hex = '...'  # Aquí iría la cadena hexadecimal del paquete

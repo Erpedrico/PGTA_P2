@@ -8,6 +8,7 @@ from functions.filter import aplicar_filtros
 from functions.extract_data_fields import extract_data_fields
 from functions.extract_data import extraer_datos
 from functions.Posiciones import process_dataframe_to_trajectories
+from functions.map import abrir_mapa_webview
 import pandas as pd
 from tkinter import simpledialog
 import csv
@@ -31,11 +32,6 @@ mapa.save(mapa_path)
 # Función para abrir el mapa en el navegador
 def abrir_mapa():
     os.startfile(mapa_path)
-
-# Función para abrir el mapa en ventana emergente
-def abrir_mapa_webview():
-    webview.create_window("Mapa Interactivo", mapa_path)
-    webview.start()
 
 # --------------------- Botones de control ---------------------
 def cerrar_ventana():
@@ -79,11 +75,46 @@ btn_archivo = ttk.Button(
 )
 btn_archivo.grid(row=0, column=0, padx=5, pady=5, sticky="ew") 
 
+def lanzar_mapa_desde_tabla():
+    # Llenar current_df con todos los datos que hay en tabla
+    if not extraer_datos_tabla():
+        messagebox.showwarning("Error", "No hay datos en la tabla para mostrar en el mapa.")
+        return
+    # Al usar current_df global, simplemente lo pasamos
+    abrir_mapa_webview(current_df)
+
+
 btn_mapa_webview = ttk.Button(
     btn_frame,
     text="Ver Mapa",
-    command=abrir_mapa_webview
+    command=lanzar_mapa_desde_tabla
 )
+
+current_df = pd.DataFrame()
+
+def extraer_datos_tabla():
+    """
+    Extrae los datos de la tabla (Treeview) y los convierte en un DataFrame.
+    """
+    global current_df
+
+    # Verificamos que hay filas en la tabla
+    if len(tabla.get_children()) == 0:
+        return False  # Si no hay datos, retorna False
+
+    # Extraer las columnas del Treeview
+    columnas = columnas_datos  # O las que estés usando en tu tabla
+    datos = []
+
+    # Recorremos cada fila de la tabla
+    for row in tabla.get_children():
+        fila = tabla.item(row)["values"]
+        datos.append(fila)
+
+    # Crear el DataFrame a partir de los datos extraídos
+    current_df = pd.DataFrame(datos, columns=columnas)
+    return True
+
 btn_mapa_webview.grid(row=0, column=5, padx=5, pady=5, sticky="ew")
 
 # --------------------- Lista de columnas ---------------------
@@ -265,9 +296,6 @@ def aplicar_filtros_actuales():
         
     except Exception as e:
         messagebox.showerror("Error", f"Fallo al filtrar:\n{str(e)}")
-   
-    
-      
         
 def actualizar_tabla(df):
     for item in tabla.get_children():
@@ -475,12 +503,6 @@ def mostrar_carga(mensaje):
 def ocultar_carga(ventana_carga):
     ventana_carga.grab_release()
     ventana_carga.destroy()
-
-
-
-    
-
-
 
 print("Lanzando interfaz...")
 root.mainloop()

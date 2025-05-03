@@ -430,17 +430,15 @@ btn_reset.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 def exportar_a_csv():
     """Exporta los datos actuales (filtrados o sin filtrar)"""
     global current_df, df_filtrado
-    # Mostrar pantalla de carga
-    
 
+     # Primero intentamos extraer los datos si no están cargados
+    if current_df is None:
+        if not extraer_datos_tabla():
+            messagebox.showwarning("Advertencia", "No hay datos para exportar")
+            return
+    
     # Verificar si hay datos disponibles
     datos_a_exportar = df_filtrado if (df_filtrado is not None and not df_filtrado.empty) else current_df 
-
-    # Verificar si hay datos filtrados
-    if df_filtrado is None or df_filtrado.empty:
-        messagebox.showwarning("Advertencia", "No hay datos filtrados para exportar")
-        return
-    
     try:
         file_path = filedialog.asksaveasfilename(
             defaultextension=".csv",

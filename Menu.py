@@ -13,6 +13,9 @@ from tkinter import simpledialog
 import csv
 from functions.map import abrir_mapa_webview
 import tkinter as tk
+import threading
+import time
+
 
 
 
@@ -62,7 +65,7 @@ btn_archivo = ctk.CTkButton(
     text="Añadir Archivo",
     command=lambda: add_file(tabla),
     fg_color="white",
-    text_color="black",  # Texto negro
+    text_color="black",  # Texto en negro
     font=("Segoe UI", 14), 
     corner_radius=8
 )
@@ -125,7 +128,10 @@ columnas_datos = [
         "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
         "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
         "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
-        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
+        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL",
+
+
+        "FL_Corrected"
 ]
 
 # ⚠️ AÑADIMOS columna "Hex (Raw)" justo después de LEN
@@ -189,6 +195,8 @@ current_df = None  # DataFrame con los datos originales
 filtro_blancos = ctk.BooleanVar(value=False)
 filtro_transponder = ctk.BooleanVar(value=False)
 filtro_on_ground = ctk.BooleanVar(value=False)
+filtro_altitud = ctk.BooleanVar(value=False)
+filtro_aeropuerto = ctk.BooleanVar(value=False)
 df_filtrado = None  # DataFrame con los datos filtrados
 
 
@@ -209,7 +217,9 @@ def extraer_datos_tabla():
         "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
         "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
         "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
-        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
+        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL",
+
+        "FL_Corrected"
 
     ]
     
@@ -225,13 +235,15 @@ def extraer_datos_tabla():
 def mostrar_dialogo_filtros():
     dialogo = ctk.CTkToplevel(root)
     dialogo.title("Configurar Filtros")
-    dialogo.geometry("400x300")
+    dialogo.geometry("400x350")  # Aumentado ligeramente
     dialogo.attributes("-topmost", True)
     
     # Variables temporales
     temp_blancos = ctk.BooleanVar(value=filtro_blancos.get())
     temp_transponder = ctk.BooleanVar(value=filtro_transponder.get())
     temp_on_ground = ctk.BooleanVar(value=filtro_on_ground.get())
+    temp_altitud = ctk.BooleanVar(value=filtro_altitud.get())
+    temp_aeropuerto = ctk.BooleanVar(value=filtro_aeropuerto.get())
     
     # Frame contenedor
     filtros_frame = ctk.CTkFrame(dialogo)
@@ -241,7 +253,7 @@ def mostrar_dialogo_filtros():
     ctk.CTkLabel(filtros_frame, text="Opciones de filtrado", 
                 font=("Segoe UI Black", 16)).pack(anchor="w", pady=(0, 15))
     
-    # Controles
+    # Filtros básicos
     ctk.CTkCheckBox(filtros_frame, text="Eliminar blancos puros", 
                    variable=temp_blancos).pack(anchor="w", pady=5)
     ctk.CTkCheckBox(filtros_frame, text="Eliminar transponder fijo", 
@@ -249,14 +261,25 @@ def mostrar_dialogo_filtros():
     ctk.CTkCheckBox(filtros_frame, text="Eliminar on ground", 
                    variable=temp_on_ground).pack(anchor="w", pady=5)
     
+    # Separador
+    ttk.Separator(filtros_frame, orient="horizontal").pack(fill="x", pady=10)
+    
+    # Filtros extra
+    ctk.CTkCheckBox(filtros_frame, text="Limitar a 6000 pies máximo", 
+                   variable=temp_altitud).pack(anchor="w", pady=5)
+    ctk.CTkCheckBox(filtros_frame, text="Filtrar por aeropuerto Barcelona", 
+                   variable=temp_aeropuerto).pack(anchor="w", pady=5)
     # Botones
     buttons_frame = ctk.CTkFrame(filtros_frame, fg_color="transparent")
     buttons_frame.pack(fill="x", pady=(20, 0))
     
+    # Botones
     def aplicar():
         filtro_blancos.set(temp_blancos.get())
         filtro_transponder.set(temp_transponder.get())
         filtro_on_ground.set(temp_on_ground.get())
+        filtro_altitud.set(temp_altitud.get())
+        filtro_aeropuerto.set(temp_aeropuerto.get())
         aplicar_filtros_actuales()
         dialogo.destroy()
     
@@ -265,57 +288,139 @@ def mostrar_dialogo_filtros():
     ctk.CTkButton(buttons_frame, text="Cancelar", command=dialogo.destroy).pack(side="right")
 
 def aplicar_filtros_actuales():
+    """
+    Aplica los filtros seleccionados utilizando el sistema de carga 
+    """
     global current_df, df_filtrado
+    
     if current_df is None:
         if not extraer_datos_tabla():
             messagebox.showwarning("Error", "Primero carga un archivo")
             return
-        
-    # Mostrar pantalla de carga
-    carga = mostrar_carga("Aplicando filtros...")
-    root.update()
     
-    try:
-        df_filtrado = current_df.copy()
+    # Función que ejecutará en segundo plano
+    def ejecutar_filtros(carga_info):
+        df_procesado = current_df.copy()
+        total_filtros = sum([
+            filtro_blancos.get(), 
+            filtro_transponder.get(), 
+            filtro_on_ground.get(), 
+            filtro_altitud.get(), 
+            filtro_aeropuerto.get()
+        ])
         
-        # 1. Filtro de blancos puros (conservando nombres Python)
+        filtros_aplicados = 0
+        
+        # 1. Filtro de blancos puros
         if filtro_blancos.get():
-
+            actualizar_carga(
+                carga_info, 
+                estado="Eliminando blancos puros...",
+                progreso=filtros_aplicados/total_filtros
+            )
+            time.sleep(0.2)  # Pequeña pausa para ver la actualización
+            
             modos_validos = [
                 "Single ModeS All-Call",
                 "Single ModeS Roll-Call",
                 "ModeS All-Call+PSR",
                 "ModeS Roll-Call + PSR"
             ]
-            # Convertimos a string y aplicamos filtro
-            df_filtrado = df_filtrado[
-                df_filtrado['Target report description'].astype(str).apply(lambda x: any(m in x for m in modos_validos)  )
+            df_procesado = df_procesado[
+                df_procesado['Target report description'].astype(str).apply(
+                    lambda x: any(m in x for m in modos_validos)
+                )
             ]
+            filtros_aplicados += 1
         
-        # 2. Filtro de transponder 
+        # 2. Filtro de transponder
         if filtro_transponder.get():
-            mask = (df_filtrado['FL'] == 'N/A') | (~df_filtrado['FL'].astype(str).str.contains('7777'))
-            df_filtrado = df_filtrado[mask]
+            actualizar_carga(
+                carga_info, 
+                estado="Filtrando transponders fijos...",
+                progreso=filtros_aplicados/total_filtros
+            )
+            time.sleep(0.2)
+            
+            mask = (df_procesado['FL'] == 'N/A') | (~df_procesado['FL'].astype(str).str.contains('7777'))
+            df_procesado = df_procesado[mask]
+            filtros_aplicados += 1
         
-        # 3. Filtro on ground 
+        # 3. Filtro on ground
         if filtro_on_ground.get():
+            actualizar_carga(
+                carga_info, 
+                estado="Filtrando aeronaves en tierra...",
+                progreso=filtros_aplicados/total_filtros
+            )
+            time.sleep(0.2)
+            
             estados_tierra = [
                 "No alert, no SPI, aircraft on ground",
                 "Alert, no SPI, aircraft on ground"
             ]
-            df_filtrado = df_filtrado[~df_filtrado['STAT'].isin(estados_tierra)]
+            df_procesado = df_procesado[~df_procesado['STAT'].isin(estados_tierra)]
+            filtros_aplicados += 1
+
+        # 4. Filtros extra
+        if filtro_altitud.get():
+            actualizar_carga(
+                carga_info, 
+                estado="Aplicando filtro de altitud máxima...",
+                progreso=filtros_aplicados/total_filtros
+            )
+            time.sleep(0.2)
+            
+            from functions.filter import filtrar_altitud_maxima
+            df_procesado = filtrar_altitud_maxima(df_procesado)
+            filtros_aplicados += 1
         
-        # Actualizar tabla
-        root.update()
+        if filtro_aeropuerto.get():
+            actualizar_carga(
+                carga_info, 
+                estado="Aplicando filtro de aeropuerto...",
+                progreso=filtros_aplicados/total_filtros
+            )
+            time.sleep(0.2)
+            
+            from functions.filter import filtrar_aeropuerto_barcelona
+            df_procesado = filtrar_aeropuerto_barcelona(df_procesado)
+            filtros_aplicados += 1
+        
+        # Completado
+        actualizar_carga(
+            carga_info, 
+            estado="Actualizando tabla...",
+            progreso=1.0
+        )
+        time.sleep(0.2)
+        
+        return df_procesado
+    
+    # Función que se ejecuta cuando se completa el filtrado
+    def filtrado_completado(resultado):
+        global df_filtrado
+        df_filtrado = resultado
         actualizar_tabla(df_filtrado)
-        ocultar_carga(carga)  
-        messagebox.showinfo("Filtros aplicados",
-                          f"Registros mostrados: {len(df_filtrado)}\n"
-                          )       
         
-    except Exception as e:
-        messagebox.showerror("Error", f"Fallo al filtrar:\n{str(e)}")
+        # Mostrar resumen de filtros aplicados
+        messagebox.showinfo(
+            "Filtros aplicados", 
+            f"Registros mostrados: {len(df_filtrado)}\n" +
+            ("✓ Filtrado por aeropuerto Barcelona\n" if filtro_aeropuerto.get() else "") +
+            ("✓ Altitud máxima 6000 pies\n" if filtro_altitud.get() else "")
+        )
+    
+    # Ejecutar en segundo plano
+    ejecutar_en_segundo_plano(
+        funcion=ejecutar_filtros,
+        mensaje="Aplicando filtros",
+        on_complete=filtrado_completado,
+        cancelable=True
+    )
         
+#Actualizacion de la tabla si hay filtrado
+     
 def actualizar_tabla(df):
     for item in tabla.get_children():
         tabla.delete(item)
@@ -397,7 +502,10 @@ def actualizar_tabla(df):
             row.get("BARO_RATE_STATUS", ""),
             row.get("BARO_RATE", ""),
             row.get("INERTIAL_VERT_STATUS", ""),
-            row.get("INERTIAL_VERT_VEL", "")
+            row.get("INERTIAL_VERT_VEL", ""),
+
+
+            row.get("FL_Corrected","")
         ]
         tabla.insert("", "end", values=valores)
 
@@ -412,14 +520,30 @@ btn_filtrar = ctk.CTkButton(
     corner_radius=8
 )
 btn_filtrar.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-# Botón de reset
+
+def reset_filtros():
+    """Reset all filters and apply the reset to update the table"""
+    filtro_blancos.set(False)
+    filtro_transponder.set(False)
+    filtro_on_ground.set(False)
+    filtro_altitud.set(False)
+    filtro_aeropuerto.set(False)
+    
+    # If we have data in the table, update with no filters
+    if current_df is not None:
+        # Update the table with the original data
+        actualizar_tabla(current_df)
+        messagebox.showinfo("Filtros reseteados", "Todos los filtros han sido desactivados")
+    else:
+        messagebox.showinfo("Filtros reseteados", "Todos los filtros han sido desactivados")
+
+# Update the reset button's command
 btn_reset = ctk.CTkButton(
     btn_frame,
     text="Resetear Filtros",
-    command=lambda: [filtro_blancos.set(False), filtro_transponder.set(False), 
-                    filtro_on_ground.set(False), aplicar_filtros_actuales()],
+    command=reset_filtros,  # Use the dedicated function
     fg_color="white", 
-    text_color="black",  # Texto negro
+    text_color="black",
     font=("Segoe UI", 14),
     corner_radius=8
 )
@@ -428,10 +552,12 @@ btn_reset.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
 #########################--Exportar a CSV--#################################
 def exportar_a_csv():
-    """Exporta los datos actuales (filtrados o sin filtrar)"""
+    """
+    Exporta los datos actuales (filtrados o sin filtrar) con barra de progreso
+    """
     global current_df, df_filtrado
 
-     # Primero intentamos extraer los datos si no están cargados
+    # Primero intentamos extraer los datos si no están cargados
     if current_df is None:
         if not extraer_datos_tabla():
             messagebox.showwarning("Advertencia", "No hay datos para exportar")
@@ -439,31 +565,67 @@ def exportar_a_csv():
     
     # Verificar si hay datos disponibles
     datos_a_exportar = df_filtrado if (df_filtrado is not None and not df_filtrado.empty) else current_df 
-    try:
-        file_path = filedialog.asksaveasfilename(
-            defaultextension=".csv",
-            filetypes=[("CSV Files", "*.csv"), ("All Files", "*.*")],
-            title="Guardar datos como CSV"
-        )
-        
-        if file_path:
-            carga = mostrar_carga("Preparando datos para exportación...")
-            root.update()  # Forzar actualización de la UI
     
-            #Exportar a Excel de manera óptima
+    # Solicitar ubicación para guardar
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".csv",
+        filetypes=[("CSV Files", "*.csv"), ("All Files", "*.*")],
+        title="Guardar datos como CSV"
+    )
+    
+    if not file_path:
+        return  # Usuario canceló
+    
+    # Función para ejecutar en segundo plano
+    def procesar_exportacion(carga_info):
+        # Simular pasos de exportación
+        total_filas = len(datos_a_exportar)
+        chunk_size = max(1, total_filas // 10)  # Dividir en 10 partes como máximo
+        
+        # Paso 1: Preparar datos
+        actualizar_carga(carga_info, estado="Preparando datos...", progreso=0.1)
+        time.sleep(0.3)
+        
+        # Paso 2: Formateando columnas
+        actualizar_carga(carga_info, estado="Formateando columnas...", progreso=0.3)
+        time.sleep(0.3)
+        
+        # Paso 3: Exportando a CSV
+        actualizar_carga(carga_info, estado=f"Exportando {total_filas} registros...", progreso=0.5)
+        
+        # Exportar en chunks para simular progreso
+        with open(file_path, 'w', newline='', encoding='utf-8-sig') as f:
             datos_a_exportar.to_csv(
-                file_path,
+                f,
                 index=False,
                 sep=';',  # Punto y coma para mejor compatibilidad
-                encoding='utf-8-sig',  # BOM para Excel
                 quoting=csv.QUOTE_MINIMAL
             )
-            ocultar_carga(carga)
-            messagebox.showinfo("Éxito", f"Datos exportados correctamente:\n{file_path}")
+        
+        # Paso 4: Finalizando
+        actualizar_carga(carga_info, estado="Finalizando...", progreso=0.9)
+        time.sleep(0.3)
+        
+        # Completado
+        actualizar_carga(carga_info, estado="¡Exportación completada!", progreso=1.0)
+        time.sleep(0.5)
+        
+        return file_path
     
-    except Exception as e:
-        messagebox.showerror("Error", f"Error al exportar:\n{str(e)}")
+    # Función que se ejecuta cuando se completa la exportación
+    def exportacion_completada(ruta_archivo):
+        # Mostrar mensaje de éxito
+        messagebox.showinfo(
+            "Exportación exitosa", 
+            f"Datos exportados correctamente a:\n{ruta_archivo}"
+        )
     
+    # Ejecutar en segundo plano
+    ejecutar_en_segundo_plano(
+        funcion=procesar_exportacion,
+        mensaje="Exportando datos",
+        on_complete=exportacion_completada
+    )
        
 
 # Botón exportar
@@ -530,41 +692,135 @@ estado_frame.pack(side="bottom", fill="x")
 estado_texto = ctk.CTkLabel(estado_frame, text="Listo", anchor="w")
 estado_texto.pack(side="left", padx=10)
 
-# --------------------- PANTALLA DE CARGA ---------------------
-def mostrar_carga(mensaje):
-    carga = ctk.CTkToplevel(root)
+# --------------------- PANTALLA DE CARGA MEJORADA ---------------------
+def mostrar_carga(mensaje, cancelable=False):
+    """
+    Muestra una pantalla de carga con barra de progreso y mensajes actualizables.
+    """
+    carga = ctk.CTkToplevel()
     carga.title("Procesando")
-    carga.geometry("400x150")
+    carga.geometry("450x200")
     carga.resizable(False, False)
     carga.attributes("-topmost", True)
-    carga.grab_set()
+    carga.grab_set()  # Bloquea interacción con ventana principal
+    
+    # Variable para controlar la cancelación
+    cancelar_operacion = ctk.BooleanVar(value=False)
     
     # Centrar en la pantalla
-    posicionx = root.winfo_x() + (root.winfo_width() // 2) - 200
-    posiciony = root.winfo_y() + (root.winfo_height() // 2) - 75
+    posicionx = root.winfo_x() + (root.winfo_width() // 2) - 225
+    posiciony = root.winfo_y() + (root.winfo_height() // 2) - 100
     carga.geometry(f"+{posicionx}+{posiciony}")
     
     # Contenido
     frame = ctk.CTkFrame(carga)
     frame.pack(fill="both", expand=True, padx=20, pady=20)
     
-    ctk.CTkLabel(frame, text=mensaje, font=("Segoe UI Black", 14)).pack(pady=10)
+    # Título principal
+    mensaje_label = ctk.CTkLabel(frame, text=mensaje, font=("Segoe UI Black", 16))
+    mensaje_label.pack(pady=(10, 5))
     
-    # Progressbar personalizada
+    # Etiqueta para mostrar el estado actual
+    estado_label = ctk.CTkLabel(frame, text="Iniciando...", font=("Segoe UI", 12))
+    estado_label.pack(pady=(0, 10))
+    
+    # Progress bar
     progress_container = ctk.CTkFrame(frame, fg_color="transparent")
     progress_container.pack(pady=10, fill="x")
     
     pb = ctk.CTkProgressBar(progress_container)
-    pb.pack(fill="x")
+    pb.pack(fill="x", padx=20)
+    
+    # Por defecto, indeterminado
     pb.configure(mode="indeterminate")
     pb.start()
     
-    return carga
+    # Botón para cancelar si es necesario
+    if cancelable:
+        btn_cancelar = ctk.CTkButton(
+            frame, 
+            text="Cancelar", 
+            command=lambda: cancelar_operacion.set(True),
+            fg_color="#e74c3c",
+            hover_color="#c0392b", 
+            width=100
+        )
+        btn_cancelar.pack(pady=10)
+    
+    # Forzar actualizaciones de la interfaz
+    carga.update_idletasks()
+    carga.update()
+    
+    return {
+        "ventana": carga, 
+        "barra": pb, 
+        "mensaje": mensaje_label,
+        "estado": estado_label,
+        "cancelar": cancelar_operacion
+    }
 
+def actualizar_carga(carga_info, mensaje=None, estado=None, progreso=None):
+    """
+    Actualiza la pantalla de carga
+    """
+    if carga_info["ventana"].winfo_exists():
+        if mensaje is not None:
+            carga_info["mensaje"].configure(text=mensaje)
+        
+        if estado is not None:
+            carga_info["estado"].configure(text=estado)
+        
+        if progreso is not None:
+            # Cambiar a modo determinado si no lo está ya
+            if carga_info["barra"].cget("mode") == "indeterminate":
+                carga_info["barra"].stop()
+                carga_info["barra"].configure(mode="determinate")
+            
+            carga_info["barra"].set(progreso)
+        
+        # Actualizar la interfaz
+        carga_info["ventana"].update_idletasks()
+        carga_info["ventana"].update()
 
-def ocultar_carga(ventana_carga):
-    ventana_carga.grab_release()
-    ventana_carga.destroy()
+def ocultar_carga(carga_info):
+    """Cierra la ventana de carga"""
+    if carga_info["ventana"].winfo_exists():
+        carga_info["ventana"].grab_release()
+        carga_info["ventana"].destroy()
+
+# --------------------- EJECUCIÓN EN SEGUNDO PLANO ---------------------
+def ejecutar_en_segundo_plano(funcion, args=(), kwargs={}, on_complete=None, mensaje="Procesando", cancelable=False):
+    """
+    Ejecuta una función en segundo plano mostrando pantalla de carga
+    """
+    carga_info = mostrar_carga(mensaje, cancelable=cancelable)
+    resultado = [None]  # Usamos lista para poder modificar desde el hilo
+    error = [None]
+    
+    def worker():
+        try:
+            # Variable para controlar estado
+            kwargs['carga_info'] = carga_info
+            resultado[0] = funcion(*args, **kwargs)
+        except Exception as e:
+            error[0] = e
+        finally:
+            # Ejecutamos en el hilo principal
+            root.after(100, lambda: finalizar())
+    
+    def finalizar():
+        ocultar_carga(carga_info)
+        if error[0] is not None:
+            messagebox.showerror("Error", f"Se produjo un error:\n{str(error[0])}")
+        elif on_complete:
+            on_complete(resultado[0])
+    
+    # Iniciar hilo
+    thread = threading.Thread(target=worker)
+    thread.daemon = True
+    thread.start()
+    
+    return carga_info  # Por si se necesita acceder
 
 print("Lanzando interfaz...")
 root.mainloop()

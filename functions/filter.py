@@ -38,48 +38,48 @@ def eliminar_on_ground(df: pd.DataFrame) -> pd.DataFrame:
     return df[~df['STAT230'].isin(estados_tierra)].copy()
 
 
-# FILTROS DE ALTITUD (MODE C, FLIGHT LEVEL, QNH)
-
-def filtrar_altitud_maxima(df: pd.DataFrame, max_altitud_ft: float) -> pd.DataFrame:
-    
-    #Filtra por altitud máxima (Mode C o Flight Level).
-    #FL se convierte a ft (FL100 = 10,000 ft).
-
-    condicion = (
-        (df['ModeC_corrected'].notna() & (df['ModeC_corrected'] <= max_altitud_ft)) |
-        (df['Flight_Level'].notna() & (df['Flight_Level'] * 100 <= max_altitud_ft))
-    )
-    return df[condicion].copy()
-
 
 # FILTROS GEOGRÁFICOS (LATITUD, LONGITUD)
 
-def filtrar_por_area(
-    df: pd.DataFrame,
-    lat_min: float,
-    lat_max: float,
-    lon_min: float,
-    lon_max: float
-) -> pd.DataFrame:
-    
-    #Filtra datos dentro de un área geográfica (lat/lon).
-    
-    return df[
-        df['Latitud'].between(lat_min, lat_max) & 
-        df['Longitud'].between(lon_min, lon_max)
-    ].copy()
+def filtrar_altitud_maxima(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Filtra hasta una altitud maxima de 6000 ft
+    """
+    max_altitud_ft = 6000
+    try:
+        # Convertir a numéricos, manejar errores con coerce
+        fl_en_pies = pd.to_numeric(df['FL'], errors='coerce') * 100
+        mode_c = pd.to_numeric(df['FL_Corrected'], errors='coerce')
+        
+        # Filtrar por cualquiera de las dos columnas
+        return df[
+            (mode_c.notna() & (mode_c <= max_altitud_ft)) |
+            (fl_en_pies.notna() & (fl_en_pies <= max_altitud_ft))
+        ].copy()
+    except Exception as e:
+        print(f"[ERROR] Filtro altitud: {str(e)}")
+        return df.copy()
 
 def filtrar_aeropuerto_barcelona(df: pd.DataFrame) -> pd.DataFrame:
-    
-    #Filtro para el área del Aeropuerto de Barcelona (coordenadas).
-    
-    return filtrar_por_area(
-        df,
-        lat_min=41.27964,
-        lat_max=41.31008,
-        lon_min=2.05789,
-        lon_max=2.10870
-    )
+    """
+    Filtra para incluir solo datos del aeropuerto de Barcelona.
+    Coordenadas aproximadas del aeropuerto.
+    """
+    try:
+        # Convertir a numéricos si no lo están ya
+        lat = pd.to_numeric(df['LAT'], errors='coerce')
+        lon = pd.to_numeric(df['LON'], errors='coerce')
+        
+        # Aplicar filtro geográfico
+        mascara = (
+            lat.between(41.27964, 41.31008) & 
+            lon.between(2.05789, 2.10870)
+        )
+        
+        return df[mascara].copy()
+    except Exception as e:
+        print(f"[ERROR] Faltan columnas geográficas o error al filtrar: {str(e)}")
+        return df.copy()
 
 
 # FILTROS COMBINADOS
@@ -88,8 +88,6 @@ def aplicar_filtros(
     df: pd.DataFrame,
     config: Dict[str, Any]
 ) -> Optional[pd.DataFrame]:
-    
-
     try:
         df_filtrado = df.copy()
         
@@ -101,22 +99,14 @@ def aplicar_filtros(
             df_filtrado = eliminar_transponder_fijo(df_filtrado)
         
         if config.get("eliminar_on_ground", False):
-            df_filtrado = eliminar_on_ground(df_filtrado)    
+            df_filtrado = eliminar_on_ground(df_filtrado)
+
+        # 2. Filtros extra 
+        if config.get("filtrar_altitud_maxima", False):
+            df_filtrado = filtrar_altitud_maxima(df_filtrado)
         
-        # 2. Filtro de altitud
-        if "altitud_maxima_ft" in config:
-            df_filtrado = filtrar_altitud_maxima(df_filtrado, config["altitud_maxima_ft"])
-        
-        # 3. Filtro geográfico
-        if config.get("filtrar_por_area", {}).get("activo", False):
-            area = config["filtrar_por_area"]
-            df_filtrado = filtrar_por_area(
-                df_filtrado,
-                area["lat_min"],
-                area["lat_max"],
-                area["lon_min"],
-                area["lon_max"]
-            )
+        if config.get("filtrar_aeropuerto", False):
+            df_filtrado = filtrar_aeropuerto_barcelona(df_filtrado)
         
         return df_filtrado
     

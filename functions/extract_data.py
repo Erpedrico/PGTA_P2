@@ -74,10 +74,65 @@ def calcular_altitud(rho_nm, phi_deg, alt_radar_m=27.257):
     altitud_objetivo = sin(phi_rad) * rho_m + alt_radar_m
     return altitud_objetivo
 
+def corregir_fl(fl, bp) -> str:
+    """
+    -Corrige el Flight Level (FL) basado en la presión barométrica
+    Control dedatos:
+        - Los datos de entrada son inválidos
+        - FL > 6000 pies (no se corrige por encima de la transición altimétrica)
+        - La presión está en rango estándar (1013.0-1013.3 hPa)
+        - La presión está fuera de rangos operativos normales
+        - El cálculo resulta en valores no físicos
+    
+    Notas:
+        - La corrección solo se aplica por debajo de los 6000 pies (transición altimétrica)
+        - Rango operativo normal de presión: 950-1050 hPa
+        - Límite físico superior para FL: 50000 pies
+    """
+    try:
+        # Convertir a valores numéricos
+        fl_val = float(fl)
+        bp_val = float(bp)
+        
+        # Validación de rangos extremos
+        if fl_val <= 0 or bp_val <= 0:
+            return "N/A (Valores negativos o cero)"
+            
+        if bp_val < 950 or bp_val > 1050:
+            return "N/A (Presión fuera de rango operativo)"
+            
+        if fl_val > 50000:
+            return "N/A (FL > 50000)"
+            
+        # No corregir si la presión está en rango estándar
+        if 1013.0 <= bp_val <= 1013.3:
+            return str(int(fl_val))  # Devolver tal cual
+            
+        # Solo corregir por debajo de 6000 pies (transición altimétrica)
+        if fl_val > 6000:
+            return str(int(fl_val))  # Devolver sin corregir
+            
+        # Calcular corrección (fl ya está en pies)
+        fl_corregido = fl_val + (bp_val - 1013.2) * 30
+        
+        # Validar resultado físico
+        if fl_corregido <= 0:
+            return "N/A (Corrección no física)"
+            
+        if fl_corregido > 50000:
+            return "N/A (FL corregido > 50000)"
+            
+        return str(int(round(fl_corregido)))
+        
+    except (ValueError, TypeError) as e:
+        return f"N/A (Error: {str(e)})"
+    except Exception as e:
+        return f"N/A (Error inesperado: {str(e)})"
+
 # Constante global
 CAMPOS_DEFAULT = dict.fromkeys([
     "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description", "Validated",
-    "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "Mode3ACode", "Address",
+    "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL","Mode3ACode", "Address",
     "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING", "LAT",
     "LON", "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B", "RHO", "THETA",
     #DATA ITEM 250
@@ -86,7 +141,8 @@ CAMPOS_DEFAULT = dict.fromkeys([
         "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
         "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
         "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
-        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
+        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL",
+        "FL_Corrected"
 ], "Not Found")
 
 # Evitar prints en loops críticos, opcional con log level si se requiere
@@ -115,6 +171,10 @@ def extraer_datos(datos_hex):
         # Calcular LAT y LON a partir de RHO y THETA
         rho_str = campos.get("RHO", None)
         theta_str = campos.get("THETA", None)
+        
+        # Calcular FL a partir de FL y BP_VALUE
+        fl=campos.get("FL", None)
+        pb=campos.get("BP_VALUE", None)
 
         if rho_str is not None and theta_str is not None:
             try:
@@ -128,9 +188,28 @@ def extraer_datos(datos_hex):
                 print(f"Error al convertir RHO y THETA: {e}")
                 campos["LAT"] = "Error"
                 campos["LON"] = "Error"
+        
+        # Calcular FL Corregido - VERSIÓN MEJORADA
+        if fl is not None and pb is not None:
+            try:
+                # Asegurar que FL está en pies (no en centenas)
+                fl_pies = float(fl) * 100 if float(fl) < 1000 else float(fl)
+                pb_val = float(pb)
+                
+                # Aplicar corrección
+                fl_corregido = corregir_fl(fl_pies, pb_val)
+                
+                # Solo actualizar si la corrección fue exitosa
+                if not fl_corregido.startswith("N/A"):
+                    campos["FL_Corrected"] = fl_corregido
+                else:
+                    campos["FL_Corrected"] = str(int(fl_pies))  # Valor sin corregir
+                    
+            except Exception as e:
+                print(f"Error al calcular FL corregido: {e}")
+                campos["FL_Corrected"] = "Error"
 
         # Calcular H directamente desde FL
-        fl = campos.get("FL", None)
         if fl is not None:
             try:
                 fl_val = float(fl)

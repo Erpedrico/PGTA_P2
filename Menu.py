@@ -1,4 +1,4 @@
-import tkinter as tk
+import customtkinter as ctk
 from tkinter import filedialog, messagebox, ttk
 import folium
 import os
@@ -8,22 +8,26 @@ from functions.filter import aplicar_filtros
 from functions.extract_data_fields import extract_data_fields
 from functions.extract_data import extraer_datos
 from functions.Posiciones import process_dataframe_to_trajectories
-from functions.map import abrir_mapa_webview
 import pandas as pd
 from tkinter import simpledialog
 import csv
+from functions.map import abrir_mapa_webview
+import tkinter as tk
 
+
+
+# Apariencia y color
+ctk.set_appearance_mode("System") 
+ctk.set_default_color_theme("blue") 
 
 # Crear la ventana principal
-root = tk.Tk()
+root = ctk.CTk()
 root.title("Decodificador de ASTERIX")
 
-# Abrir ventana en pantalla completa
-root.attributes("-fullscreen", True)
+# Establecer las dimensiones de la ventana 
+root.geometry("1000x600")  
 
-# Quitar la barra de título predeterminada de la ventana
-root.overrideredirect(True)
-
+#------------------- Creación mapa web ---------------------
 # Crear un mapa base (se abrirá en el navegador)
 mapa = folium.Map(location=[20, 0], zoom_start=2)
 mapa_path = "mapa.html"
@@ -33,47 +37,37 @@ mapa.save(mapa_path)
 def abrir_mapa():
     os.startfile(mapa_path)
 
-# --------------------- Botones de control ---------------------
-def cerrar_ventana():
-    root.quit()
 
-def minimizar_ventana():
-    root.iconify()
-
-def restaurar_ventana():
-    if root.attributes("-fullscreen"):
-        root.attributes("-fullscreen", False)
-    else:
-        root.attributes("-fullscreen", True)
-
-# Frame para los botones de control
-btns_frame = tk.Frame(root, bg="gray", relief="raised", bd=2)
-btns_frame.pack(side="top", fill="x", padx=10)
+#--------------- Título --------------------------
+# Frame para el título
+btns_frame = ctk.CTkFrame(root, fg_color="#0077B6", corner_radius=0)  # Fondo azul claro
+btns_frame.pack(side="top", fill="x", padx=0, pady=0)
 
 
-# Botones de control de ventana (minimizar, restaurar y cerrar)
-btn_minimizar = tk.Button(btns_frame, text="_", command=minimizar_ventana)
-btn_restaurar = tk.Button(btns_frame, text="[]", command=restaurar_ventana)
-btn_cerrar = tk.Button(btns_frame, text="X", command=cerrar_ventana)
+# Añadir título en el centro
+title_label = ctk.CTkLabel(btns_frame, text="Decodificador de ASTERIX", 
+                          font=("Segoe UI", 18, "bold"),
+                           text_color="white")
+title_label.pack(pady=12)  # Centra el título con un poco de margen superior
 
-# Posicionar los botones en el frame superior
-btn_cerrar.pack(side="right", padx=5)
-btn_restaurar.pack(side="right", padx=5)
-btn_minimizar.pack(side="right", padx=5)
+
 
 # --------------------- Botones --------------------
-btn_frame = tk.Frame(root)
+btn_frame = ctk.CTkFrame(root)
 btn_frame.pack(side="top", pady=10, fill="x", padx=20)
 
-
 btn_abrir = tk.Button(btn_frame, text="Abrir Mapa en Navegador", command=abrir_mapa)
-btn_archivo = ttk.Button(
+btn_archivo = ctk.CTkButton(
     btn_frame,
     text="Añadir Archivo",
     command=lambda: add_file(tabla),
-    style='Accent.TButton'
+    fg_color="white",
+    text_color="black",  # Texto negro
+    font=("Segoe UI", 14), 
+    corner_radius=8
 )
 btn_archivo.grid(row=0, column=0, padx=5, pady=5, sticky="ew") 
+
 
 def lanzar_mapa_desde_tabla():
     # Llenar current_df con todos los datos que hay en tabla
@@ -84,14 +78,18 @@ def lanzar_mapa_desde_tabla():
     abrir_mapa_webview(current_df)
 
 
-btn_mapa_webview = ttk.Button(
+btn_mapa_webview = ctk.CTkButton(
     btn_frame,
     text="Ver Mapa",
-    command=lanzar_mapa_desde_tabla
+    command=lanzar_mapa_desde_tabla,
+    fg_color="#2196F3",
+    hover_color="#0b7dda",
+    font=("Segoe UI", 14,),
+    corner_radius=8
 )
 
+#############################--Creación del Dataframe--#####################################
 current_df = pd.DataFrame()
-
 def extraer_datos_tabla():
     """
     Extrae los datos de la tabla (Treeview) y los convierte en un DataFrame.
@@ -134,11 +132,11 @@ columnas_datos = [
 columnas_tabla = ["Paquete", "CAT", "LEN"] + columnas_datos
 
 # --------------------- GUI Tabla ---------------------
-frame_tabla = tk.Frame(root)
+frame_tabla = ctk.CTkFrame(root, fg_color="#1C1C1C")
 frame_tabla.pack(pady=20, fill="both", expand=True, padx=20)
 
-scroll_x = tk.Scrollbar(frame_tabla, orient="horizontal")
-scroll_y = tk.Scrollbar(frame_tabla, orient="vertical")
+scroll_x = ttk.Scrollbar(frame_tabla, orient="horizontal")
+scroll_y = ttk.Scrollbar(frame_tabla, orient="vertical")
 
 tabla = ttk.Treeview(
     frame_tabla,
@@ -158,7 +156,8 @@ scroll_x.pack(side="bottom", fill="x")
 scroll_y.pack(side="right", fill="y")
 tabla.pack(side="left", fill="both", expand=True)
 
-# --------------------- Evento seleccionar fila ---------------------
+
+# --------------------- Evento seleccionar fila -------------------
 # Función para llamar a extract_data_fields cuando se selecciona una fila
 def on_row_select(event):
     # Obtener el ID de la fila seleccionada
@@ -176,17 +175,21 @@ def on_row_select(event):
 
 # Asociar la función al evento de seleccionar una fila
 tabla.bind("<ButtonRelease-1>", on_row_select)
+style = ttk.Style()
+style.map("Treeview",
+          background=[('selected', '#555555')])  # Fondo cuando se selecciona una fila
 
-# --------------------- Dummy extraer_datos ---------------------
+# --------------------- Dummy extraer_datos --------------------
 def extraer_datos(datos_hex):
     return {col: "Not Found" for col in columnas_datos}
 
-# --------------------- FILTRADO  ---------------------
+######################--FILTRADO--##############################
+
 current_df = None  # DataFrame con los datos originales
-filtro_blancos = tk.BooleanVar(value=False)
-filtro_transponder = tk.BooleanVar(value=False)
-filtro_on_ground = tk.BooleanVar(value=False)
-df_filtrado=None #DataFrame con los datos filtrados
+filtro_blancos = ctk.BooleanVar(value=False)
+filtro_transponder = ctk.BooleanVar(value=False)
+filtro_on_ground = ctk.BooleanVar(value=False)
+df_filtrado = None  # DataFrame con los datos filtrados
 
 
 def extraer_datos_tabla():
@@ -220,20 +223,35 @@ def extraer_datos_tabla():
     return current_df is not None
 
 def mostrar_dialogo_filtros():
-    dialogo = tk.Toplevel(root)
+    dialogo = ctk.CTkToplevel(root)
     dialogo.title("Configurar Filtros")
     dialogo.geometry("400x300")
+    dialogo.attributes("-topmost", True)
     
     # Variables temporales
-    temp_blancos = tk.BooleanVar(value=filtro_blancos.get())
-    temp_transponder = tk.BooleanVar(value=filtro_transponder.get())
-    temp_on_ground = tk.BooleanVar(value=filtro_on_ground.get())
+    temp_blancos = ctk.BooleanVar(value=filtro_blancos.get())
+    temp_transponder = ctk.BooleanVar(value=filtro_transponder.get())
+    temp_on_ground = ctk.BooleanVar(value=filtro_on_ground.get())
+    
+    # Frame contenedor
+    filtros_frame = ctk.CTkFrame(dialogo)
+    filtros_frame.pack(fill="both", expand=True, padx=20, pady=20)
+    
+    # Título
+    ctk.CTkLabel(filtros_frame, text="Opciones de filtrado", 
+                font=("Segoe UI Black", 16)).pack(anchor="w", pady=(0, 15))
     
     # Controles
-    ttk.Checkbutton(dialogo, text="Eliminar blancos puros", variable=temp_blancos).pack(anchor="w", pady=5)
-    ttk.Checkbutton(dialogo, text="Eliminar transponder fijo", variable=temp_transponder).pack(anchor="w", pady=5)
-    ttk.Checkbutton(dialogo, text="Eliminar on ground", variable=temp_on_ground).pack(anchor="w", pady=5)
-       
+    ctk.CTkCheckBox(filtros_frame, text="Eliminar blancos puros", 
+                   variable=temp_blancos).pack(anchor="w", pady=5)
+    ctk.CTkCheckBox(filtros_frame, text="Eliminar transponder fijo", 
+                   variable=temp_transponder).pack(anchor="w", pady=5)
+    ctk.CTkCheckBox(filtros_frame, text="Eliminar on ground", 
+                   variable=temp_on_ground).pack(anchor="w", pady=5)
+    
+    # Botones
+    buttons_frame = ctk.CTkFrame(filtros_frame, fg_color="transparent")
+    buttons_frame.pack(fill="x", pady=(20, 0))
     
     def aplicar():
         filtro_blancos.set(temp_blancos.get())
@@ -242,8 +260,9 @@ def mostrar_dialogo_filtros():
         aplicar_filtros_actuales()
         dialogo.destroy()
     
-    ttk.Button(dialogo, text="Aplicar", command=aplicar).pack(side="right", padx=5)
-    ttk.Button(dialogo, text="Cancelar", command=dialogo.destroy).pack(side="right")
+    ctk.CTkButton(buttons_frame, text="Aplicar", command=aplicar, 
+                 fg_color="#4CAF50", hover_color="#45a049").pack(side="right", padx=10)
+    ctk.CTkButton(buttons_frame, text="Cancelar", command=dialogo.destroy).pack(side="right")
 
 def aplicar_filtros_actuales():
     global current_df, df_filtrado
@@ -383,24 +402,31 @@ def actualizar_tabla(df):
         tabla.insert("", "end", values=valores)
 
 # Botón de filtros
-btn_filtrar = ttk.Button(
+btn_filtrar = ctk.CTkButton(
     btn_frame,
     text="Filtrar Datos",
-    command=mostrar_dialogo_filtros
+    command=mostrar_dialogo_filtros,
+    fg_color="white", 
+    text_color="black",  # Texto negro
+    font=("Segoe UI", 14), 
+    corner_radius=8
 )
 btn_filtrar.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-
 # Botón de reset
-btn_reset = ttk.Button(
+btn_reset = ctk.CTkButton(
     btn_frame,
     text="Resetear Filtros",
     command=lambda: [filtro_blancos.set(False), filtro_transponder.set(False), 
-                    filtro_on_ground.set(False), aplicar_filtros_actuales()]
+                    filtro_on_ground.set(False), aplicar_filtros_actuales()],
+    fg_color="white", 
+    text_color="black",  # Texto negro
+    font=("Segoe UI", 14),
+    corner_radius=8
 )
 btn_reset.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
 
-#............Exportar a CSV............................
+#########################--Exportar a CSV--#################################
 def exportar_a_csv():
     """Exporta los datos actuales (filtrados o sin filtrar)"""
     global current_df, df_filtrado
@@ -443,15 +469,18 @@ def exportar_a_csv():
        
 
 # Botón exportar
-btn_exportar = ttk.Button(
+btn_exportar = ctk.CTkButton(
     btn_frame,
     text="Exportar a CSV",
     command=exportar_a_csv,
-    style='Accent.TButton'
+    fg_color="#2196F3",
+    hover_color="#0b7dda",
+    font=("Segoe UI", 14,),
+    corner_radius=8
 )
 btn_exportar.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
 
-########################### Posiciones ######################################
+##########################--Posiciones--######################################
 #Le pasamos la dataframe que se esta usando en el momento a Posiciones
 def iniciarPosiciones():
    
@@ -465,40 +494,75 @@ def iniciarPosiciones():
     posiciones_df = process_dataframe_to_trajectories(current_df)
 
 
-# --------------------- ESTILOS Y APARIENCIA ---------------------
-style = ttk.Style()
-style.theme_use('clam')
+##################################ESTILOS Y APARIENCIA ########################################
+# --------------------- NOTIFICACIONES ---------------------
+def mostrar_notificacion(titulo, mensaje):
+    notif = ctk.CTkToplevel(root)
+    notif.title(titulo)
+    notif.geometry("300x150")
+    notif.resizable(False, False)
+    notif.attributes("-topmost", True)
+    
+    # Ubicar en esquina inferior derecha
+    posicionx = root.winfo_screenwidth() - 350
+    posiciony = root.winfo_screenheight() - 200
+    notif.geometry(f"+{posicionx}+{posiciony}")
+    
+    # Contenido
+    frame = ctk.CTkFrame(notif)
+    frame.pack(fill="both", expand=True, padx=15, pady=15)
+    
+    # Título
+    ctk.CTkLabel(frame, text=titulo, font=("Segoe UI", 16)).pack(anchor="w")
+    
+    # Mensaje
+    ctk.CTkLabel(frame, text=mensaje, font=("Segoe UI", 12)).pack(anchor="w", pady=10)
+    
+    # Botón cerrar
+    ctk.CTkButton(frame, text="Aceptar", command=notif.destroy, 
+                 width=80, height=30).pack(side="right")
+    
+    # Auto-cerrar después de 5 segundos
+    notif.after(5000, notif.destroy)
 
-# Configurar colores y estilos
-style.configure('TFrame', background='#2d2d2d')
-style.configure('TButton', 
-               font=('Arial', 10, 'bold'),
-               padding=6,
-               background='#4CAF50',
-               foreground='white')
-style.map('TButton',
-         background=[('active', '#45a049')])
+# --------------------- BARRA DE ESTADO ---------------------
+estado_frame = ctk.CTkFrame(root, height=25, corner_radius=0)
+estado_frame.pack(side="bottom", fill="x")
 
-style.configure('Header.TLabel', 
-               font=('Arial', 12, 'bold'),
-               background='#333',
-               foreground='white')
+estado_texto = ctk.CTkLabel(estado_frame, text="Listo", anchor="w")
+estado_texto.pack(side="left", padx=10)
 
 # --------------------- PANTALLA DE CARGA ---------------------
 def mostrar_carga(mensaje):
-    carga = tk.Toplevel(root)
+    carga = ctk.CTkToplevel(root)
     carga.title("Procesando")
-    carga.geometry("300x100")
+    carga.geometry("400x150")
     carga.resizable(False, False)
     carga.attributes("-topmost", True)
     carga.grab_set()
     
-    tk.Label(carga, text=mensaje, font=('Arial', 11)).pack(pady=10)
-    pb = ttk.Progressbar(carga, mode='indeterminate')
-    pb.pack(pady=5, padx=20, fill='x')
+    # Centrar en la pantalla
+    posicionx = root.winfo_x() + (root.winfo_width() // 2) - 200
+    posiciony = root.winfo_y() + (root.winfo_height() // 2) - 75
+    carga.geometry(f"+{posicionx}+{posiciony}")
+    
+    # Contenido
+    frame = ctk.CTkFrame(carga)
+    frame.pack(fill="both", expand=True, padx=20, pady=20)
+    
+    ctk.CTkLabel(frame, text=mensaje, font=("Segoe UI Black", 14)).pack(pady=10)
+    
+    # Progressbar personalizada
+    progress_container = ctk.CTkFrame(frame, fg_color="transparent")
+    progress_container.pack(pady=10, fill="x")
+    
+    pb = ctk.CTkProgressBar(progress_container)
+    pb.pack(fill="x")
+    pb.configure(mode="indeterminate")
     pb.start()
     
     return carga
+
 
 def ocultar_carga(ventana_carga):
     ventana_carga.grab_release()

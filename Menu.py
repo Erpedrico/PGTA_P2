@@ -16,9 +16,6 @@ import tkinter as tk
 import threading
 import time
 
-
-
-
 # Apariencia y color
 ctk.set_appearance_mode("System") 
 ctk.set_default_color_theme("blue") 
@@ -83,7 +80,7 @@ def lanzar_mapa_desde_tabla():
 
 btn_mapa_webview = ctk.CTkButton(
     btn_frame,
-    text="Ver Mapa",
+    text="Realizar simulación",
     command=lanzar_mapa_desde_tabla,
     fg_color="#2196F3",
     hover_color="#0b7dda",
@@ -120,18 +117,17 @@ btn_mapa_webview.grid(row=0, column=5, padx=5, pady=5, sticky="ew")
 
 # --------------------- Lista de columnas ---------------------
 columnas_datos = [
-    "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description", "Validated", "Garbled", "CodeSource", "Mode3ACode", "Validated_FL", "Garbled_FL", "FL", "Address", "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING","LAT", "LON", "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A","B1B", "RHO", "THETA", #DATA ITEM 250
-       
-       #DATA ITEM 250
-        "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
-        "MODE_STATUS", "VNAV", "ALTHOLD", "APP", "TARGETALT_STATUS", "TARGETALT_SOURCE",
-        "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
-        "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
-        "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
-        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL",
-
-
-        "FL_Corrected"
+    "SAC", "SIC", "TIME", "LAT",
+    "LON", "H", "TYP020", "SIM020", "RDP020", "SPI020", "RAB020", "Validated",
+    "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "FL_Corrected", "Mode3ACode", "Address",
+    "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING", 
+    "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B", "RHO", "THETA",
+    "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
+    "MODE_STATUS", "VNAV", "ALTHOLD", "APP", "TARGETALT_STATUS", "TARGETALT_SOURCE",
+    "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
+    "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
+    "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
+    "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
 ]
 
 # ⚠️ AÑADIMOS columna "Hex (Raw)" justo después de LEN
@@ -205,21 +201,17 @@ def extraer_datos_tabla():
     datos = []
     
     columnas_completas = ["Paquete", "CAT", "LEN"] + [
-        "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description",
-        "Validated", "Garbled", "CodeSource", "Mode3ACode", "Validated_FL",
-        "Garbled_FL", "FL", "Address", "ID", "BDS", "TRACK NUMBER", 
-        "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING", "LAT", "LON",
-        "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B",
-        "RHO", "THETA",
-        #DATA ITEM 250
+        "SAC", "SIC", "TIME", "LAT",
+        "LON", "H", "TYP020", "SIM020", "RDP020", "SPI020", "RAB020", "Validated",
+        "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "FL_Corrected", "Mode3ACode", "Address",
+        "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING", 
+        "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B", "RHO", "THETA",
         "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
         "MODE_STATUS", "VNAV", "ALTHOLD", "APP", "TARGETALT_STATUS", "TARGETALT_SOURCE",
         "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
         "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
         "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
-        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL",
-
-        "FL_Corrected"
+        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
 
     ]
     
@@ -430,11 +422,9 @@ def actualizar_tabla(df):
             row.get("Paquete", ""),
             row.get("CAT", ""),
             row.get("LEN", ""),
-            row.get("NUM", ""),
             row.get("SAC", ""),
             row.get("SIC", ""),
             row.get("TIME", ""),
-            row.get("TIME(s)", ""),
             row.get("Target report description", ""),
             row.get("Validated", ""),
             row.get("Garbled", ""),

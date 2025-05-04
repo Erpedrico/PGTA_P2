@@ -42,16 +42,17 @@ def add_file(tabla):
         extend = list.extend
 
         columnas = [
-            "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description", "Validated",
-            "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "Mode3ACode", "Address",
-            "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING", "LAT",
-            "LON", "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B", "RHO", "THETA",
+            "SAC", "SIC", "TIME", "LAT",
+            "LON", "H", "TYP020", "SIM020", "RDP020", "SPI020", "RAB020", "Validated",
+            "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "FL_Corrected", "Mode3ACode", "Address",
+            "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING",
+            "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B", "RHO", "THETA",
             "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
             "MODE_STATUS", "VNAV", "ALTHOLD", "APP", "TARGETALT_STATUS", "TARGETALT_SOURCE",
             "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
             "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
             "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
-            "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL",  "FL_Corrected"
+            "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
         ]
 
         for i, packet in enumerate(packets):

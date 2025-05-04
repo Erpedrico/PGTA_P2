@@ -131,18 +131,17 @@ def corregir_fl(fl, bp) -> str:
 
 # Constante global
 CAMPOS_DEFAULT = dict.fromkeys([
-    "NUM", "SAC", "SIC", "TIME", "TIME(s)", "Target report description", "Validated",
-    "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL","Mode3ACode", "Address",
-    "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING", "LAT",
-    "LON", "H", "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B", "RHO", "THETA",
-    #DATA ITEM 250
-        "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
-        "MODE_STATUS", "VNAV", "ALTHOLD", "APP", "TARGETALT_STATUS", "TARGETALT_SOURCE",
-        "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
-        "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
-        "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
-        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL",
-        "FL_Corrected"
+    "SAC", "SIC", "TIME", "LAT",
+    "LON", "H", "TYP020", "SIM020", "RDP020", "SPI020", "RAB020", "Validated",
+    "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "FL_Corrected", "Mode3ACode", "Address",
+    "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING",
+    "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B", "RHO", "THETA",
+    "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
+    "MODE_STATUS", "VNAV", "ALTHOLD", "APP", "TARGETALT_STATUS", "TARGETALT_SOURCE",
+    "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
+    "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
+    "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
+    "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
 ], "Not Found")
 
 # Evitar prints en loops críticos, opcional con log level si se requiere
@@ -250,14 +249,17 @@ def handler_item_variable(data_func, nombre, packet_bytes, campos):
     while packet_bytes[octets_to_read - 1] & 1:
         octets_to_read += 1
     resultado = data_func(packet_bytes[:octets_to_read].hex())
-    campos[nombre] = str(resultado)
+    if not isinstance(resultado, (list, tuple)):
+        resultado = [resultado]
+    for nombre, valor in zip(nombre, resultado):
+        campos[nombre] = str(valor)
     return packet_bytes[octets_to_read:]
 
 def handler_item_3(pb, campos):
-    return handler_item_variable(data_item_3, "Target report description", pb, campos)
+    return handler_item_variable(data_item_3, ["TYP020", "SIM020", "RDP020", "SPI020", "RAB020"], pb, campos)
 
 def handler_item_14(pb, campos):
-    return handler_item_variable(data_item_14, "TRACK STATUS", pb, campos)
+    return handler_item_variable(data_item_14, ["TRACK STATUS"], pb, campos)
 
 def handler_item_7(pb, campos):
     if len(pb) < 1:

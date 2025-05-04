@@ -77,7 +77,7 @@ def calcular_altitud(rho_nm, phi_deg, alt_radar_m=27.257):
 def corregir_fl(fl, bp) -> str:
     """
     -Corrige el Flight Level (FL) basado en la presión barométrica
-    Control dedatos:
+    Control de datos:
         - Los datos de entrada son inválidos
         - FL > 6000 pies (no se corrige por encima de la transición altimétrica)
         - La presión está en rango estándar (1013.0-1013.3 hPa)
@@ -188,7 +188,7 @@ def extraer_datos(datos_hex):
                 campos["LAT"] = "Error"
                 campos["LON"] = "Error"
         
-        # Calcular FL Corregido - VERSIÓN MEJORADA
+        # Calcular FL Corregido 
         if fl is not None and pb is not None:
             try:
                 # Asegurar que FL está en pies (no en centenas)

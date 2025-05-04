@@ -25,7 +25,7 @@ def eliminar_transponder_fijo(df: pd.DataFrame, codigo_fijo: int = 7777) -> pd.D
     
     #Elimina transponders con código fijo (7777).
     
-    return df[(df['Mode_3A'] == 'N/A') | (df['Mode_3A'].astype(int) != codigo_fijo)].copy()
+    return df[(df['Mode3ACode'] == 'N/A') | (df['Mode3ACode'].astype(int) != codigo_fijo)].copy()
 
 def eliminar_on_ground(df: pd.DataFrame) -> pd.DataFrame:
     
@@ -35,7 +35,7 @@ def eliminar_on_ground(df: pd.DataFrame) -> pd.DataFrame:
         "No alert, no SPI, aircraft on ground",
         "Alert, no SPI, aircraft on ground"
     ]
-    return df[~df['STAT230'].isin(estados_tierra)].copy()
+    return df[~df['STAT'].isin(estados_tierra)].copy()
 
 
 

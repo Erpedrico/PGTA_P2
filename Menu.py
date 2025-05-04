@@ -70,12 +70,26 @@ btn_archivo.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
 
 
 def lanzar_mapa_desde_tabla():
-    # Llenar current_df con todos los datos que hay en tabla
-    if not extraer_datos_tabla():
-        messagebox.showwarning("Error", "No hay datos en la tabla para mostrar en el mapa.")
-        return
-    # Al usar current_df global, simplemente lo pasamos
-    abrir_mapa_webview(current_df)
+    global current_df, df_filtrado
+    
+    # Determinar qué datos usar para el mapa
+    datos_para_mapa = None
+    
+    if df_filtrado is not None and not df_filtrado.empty:
+        # Si hay datos filtrados, usamos esos para el mapa
+        datos_para_mapa = df_filtrado.copy()
+    elif current_df is not None and not current_df.empty:
+        # Si no hay filtrados pero hay datos actuales, usamos esos
+        datos_para_mapa = current_df.copy()
+    else:
+        # Si no hay datos en memoria, intentamos extraerlos de la tabla actual
+        if not extraer_datos_tabla():
+            messagebox.showwarning("Error", "No hay datos en la tabla para mostrar en el mapa.")
+            return
+        datos_para_mapa = df_filtrado.copy()
+    
+    # Importante: usamos una copia para el mapa sin afectar los datos originales o filtrados
+    abrir_mapa_webview(datos_para_mapa)
 
 
 btn_mapa_webview = ctk.CTkButton(
@@ -203,7 +217,7 @@ def extraer_datos_tabla():
     columnas_completas = ["Paquete", "CAT", "LEN"] + [
         "SAC", "SIC", "TIME", "LAT",
         "LON", "H", "TYP020", "SIM020", "RDP020", "SPI020", "RAB020", "Validated",
-        "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "FL_Corrected", "Mode3ACode", "Address",
+        "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "FL_Corrected" , "Mode3ACode", "Address",
         "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", "X", "Y", "GS", "GS_KT", "HEADING", 
         "COM", "STAT", "SI", "MSSC", "ARC", "AIC", "B1A", "B1B", "RHO", "THETA",
         "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
@@ -310,7 +324,7 @@ def aplicar_filtros_actuales():
                 estado="Eliminando blancos puros...",
                 progreso=filtros_aplicados/total_filtros
             )
-            time.sleep(0.2)  # Pequeña pausa para ver la actualización
+            time.sleep(2)  # Pequeña pausa para ver la actualización
             
             modos_validos = [
                 "Single ModeS All-Call",
@@ -319,7 +333,7 @@ def aplicar_filtros_actuales():
                 "ModeS Roll-Call + PSR"
             ]
             df_procesado = df_procesado[
-                df_procesado['Target report description'].astype(str).apply(
+                df_procesado['TYP020'].astype(str).apply(
                     lambda x: any(m in x for m in modos_validos)
                 )
             ]
@@ -332,9 +346,9 @@ def aplicar_filtros_actuales():
                 estado="Filtrando transponders fijos...",
                 progreso=filtros_aplicados/total_filtros
             )
-            time.sleep(0.2)
+            time.sleep(2)
             
-            mask = (df_procesado['FL'] == 'N/A') | (~df_procesado['FL'].astype(str).str.contains('7777'))
+            mask = (df_procesado['Mode3ACode'] == 'Not Found') | (~df_procesado['Mode3ACode'].astype(str).str.contains('7777'))
             df_procesado = df_procesado[mask]
             filtros_aplicados += 1
         
@@ -345,7 +359,7 @@ def aplicar_filtros_actuales():
                 estado="Filtrando aeronaves en tierra...",
                 progreso=filtros_aplicados/total_filtros
             )
-            time.sleep(0.2)
+            time.sleep(2)
             
             estados_tierra = [
                 "No alert, no SPI, aircraft on ground",
@@ -361,7 +375,7 @@ def aplicar_filtros_actuales():
                 estado="Aplicando filtro de altitud máxima...",
                 progreso=filtros_aplicados/total_filtros
             )
-            time.sleep(0.2)
+            time.sleep(2)
             
             from functions.filter import filtrar_altitud_maxima
             df_procesado = filtrar_altitud_maxima(df_procesado)
@@ -373,7 +387,7 @@ def aplicar_filtros_actuales():
                 estado="Aplicando filtro de aeropuerto...",
                 progreso=filtros_aplicados/total_filtros
             )
-            time.sleep(0.2)
+            time.sleep(2)
             
             from functions.filter import filtrar_aeropuerto_barcelona
             df_procesado = filtrar_aeropuerto_barcelona(df_procesado)
@@ -387,6 +401,8 @@ def aplicar_filtros_actuales():
         )
         time.sleep(0.2)
         
+    
+
         return df_procesado
     
     # Función que se ejecuta cuando se completa el filtrado
@@ -410,7 +426,7 @@ def aplicar_filtros_actuales():
         on_complete=filtrado_completado,
         cancelable=True
     )
-        
+
 #Actualizacion de la tabla si hay filtrado
      
 def actualizar_tabla(df):
@@ -418,21 +434,29 @@ def actualizar_tabla(df):
         tabla.delete(item)
     
     for _, row in df.iterrows():
-        valores = [
+        valores =[
             row.get("Paquete", ""),
             row.get("CAT", ""),
             row.get("LEN", ""),
             row.get("SAC", ""),
             row.get("SIC", ""),
             row.get("TIME", ""),
-            row.get("Target report description", ""),
+            row.get("LAT", ""),
+            row.get("LON", ""),
+            row.get("H", ""),
+            row.get("TYP020",""),
+            row.get("SIM020", ""),
+            row.get("RDP020", ""),
+            row.get("SPI020", ""),
+            row.get("RAB020", ""),
             row.get("Validated", ""),
             row.get("Garbled", ""),
             row.get("CodeSource", ""),
-            row.get("Mode3ACode", ""),
             row.get("Validated_FL", ""),
             row.get("Garbled_FL", ""),
             row.get("FL", ""),
+            row.get("FL_Corrected",""),
+            row.get("Mode3ACode", ""),
             row.get("Address", ""),
             row.get("ID", ""),
             row.get("BDS", ""),
@@ -492,10 +516,7 @@ def actualizar_tabla(df):
             row.get("BARO_RATE_STATUS", ""),
             row.get("BARO_RATE", ""),
             row.get("INERTIAL_VERT_STATUS", ""),
-            row.get("INERTIAL_VERT_VEL", ""),
-
-
-            row.get("FL_Corrected","")
+            row.get("INERTIAL_VERT_VEL", "")          
         ]
         tabla.insert("", "end", values=valores)
 
@@ -512,20 +533,49 @@ btn_filtrar = ctk.CTkButton(
 btn_filtrar.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
 def reset_filtros():
-    """Reset all filters and apply the reset to update the table"""
-    filtro_blancos.set(False)
-    filtro_transponder.set(False)
-    filtro_on_ground.set(False)
-    filtro_altitud.set(False)
-    filtro_aeropuerto.set(False)
+    """Reset all filters and apply the reset to update the table with loading screen"""
+    # Mostrar pantalla de carga
+    def realizar_reset(carga_info):
+        #Reseteando filtros
+        actualizar_carga(
+            carga_info,
+            estado="Desactivando filtros...",
+            progreso=0.3
+        )
+        time.sleep(2.0)
+        
+        # Resetear variables de filtro
+        filtro_blancos.set(False)
+        filtro_transponder.set(False)
+        filtro_on_ground.set(False)
+        filtro_altitud.set(False)
+        filtro_aeropuerto.set(False)
+        
+        
+        # Si tenemos datos en la tabla, actualizar con datos sin filtrar
+        if current_df is not None:
+            # Paso 3: Actualizando tabla
+            actualizar_carga(
+                carga_info,
+                estado="Actualizando vista...",
+                progreso=0.9
+            )
+            time.sleep(1.0)
+            
+            return current_df
+        return None
     
-    # If we have data in the table, update with no filters
-    if current_df is not None:
-        # Update the table with the original data
-        actualizar_tabla(current_df)
+    def reset_completado(resultado):
+        if resultado is not None:
+            actualizar_tabla(resultado)
         messagebox.showinfo("Filtros reseteados", "Todos los filtros han sido desactivados")
-    else:
-        messagebox.showinfo("Filtros reseteados", "Todos los filtros han sido desactivados")
+    
+    # Ejecutar en segundo plano
+    ejecutar_en_segundo_plano(
+        funcion=realizar_reset,
+        mensaje="Restableciendo filtros",
+        on_complete=reset_completado
+    )
 
 # Update the reset button's command
 btn_reset = ctk.CTkButton(

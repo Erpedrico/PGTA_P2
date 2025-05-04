@@ -1,5 +1,5 @@
-def data_item_7(packet): 
-     # Limpiar el paquete (eliminar caracteres no válidos)
+def data_item_7(packet):
+    # Limpiar el paquete (eliminar caracteres no válidos)
     cleaned_packet = "".join(c for c in packet if c in "0123456789abcdefABCDEF")
     
     # Verificar si la cadena limpia tiene una longitud par
@@ -9,11 +9,16 @@ def data_item_7(packet):
     
     # Convertir la cadena hexadecimal limpia a bytes
     try:
-        packet_bytes = bytes.fromhex(cleaned_packet)  # Convierte la cadena hexadecimal a bytes
+        packet_bytes = bytes.fromhex(cleaned_packet)
     except ValueError as e:
         print(f"Error al convertir el paquete hexadecimal: {e}")
         return None
     
+    # Verificar que hay al menos 1 octeto
+    if len(packet_bytes) < 1:
+        print("Error: Paquete demasiado corto")
+        return None
+
     # Procesar el primer octeto (Primary Subfield)
     first_octet = packet_bytes[0]
     SRL = (first_octet >> 7) & 0b1  # bit 8
@@ -39,62 +44,63 @@ def data_item_7(packet):
 
     print(radar_plot_characteristics)
 
-    octet_index=1
-    radar_plot=[]
-    while FX ==1:
+    radar_plot = []
+    octet_index = 1
+    
+    # Procesar extensiones si FX=1
+    while FX == 1 and octet_index < len(packet_bytes):
+        current_octet = packet_bytes[octet_index]
+        FX = current_octet & 0b1  # Verificar si hay más extensiones
+        
         # Procesar subcampos si están presentes
-        # Subfield #1: SSR Plot Runlength
+        # Subfield #1: SSR Plot Runlength (0.044 * N, donde N es el valor del octeto)
         if SRL and octet_index < len(packet_bytes):
-            srl_octet = packet_bytes[octet_index]
-            srl_value = srl_octet  # Valor binario de SRL
-            radar_plot.append(srl_value * 0.044)
+            srl_value = packet_bytes[octet_index]
+            radar_plot.append(srl_value * 0.044)  # Convertir a microsegundos
             octet_index += 1
 
         # Subfield #2: Number of Received Replies for MSSR
         if SRR and octet_index < len(packet_bytes):
-            srr_octet = packet_bytes[octet_index]
-            srr_value = srr_octet  # Valor binario de SRR
+            srr_value = packet_bytes[octet_index]
             radar_plot.append(srr_value)
             octet_index += 1
 
-        # Subfield #3: Amplitude of MSSR Reply
+        # Subfield #3: Amplitude of MSSR Reply (en complemento A2)
         if SAM and octet_index < len(packet_bytes):
-            sam_octet = packet_bytes[octet_index]
-            sam_value = sam_octet  # Valor binario de SAM
-            radar_plot.append(sam_value)
-            octet_index +=1
+            sam_value = packet_bytes[octet_index]
+            if sam_value & 0b10000000:  # Si el bit de signo está activo
+                sam_value = sam_value - 256  # Convertir a negativo (complemento A2)
+            radar_plot.append(sam_value)  # Valor en dBm
+            octet_index += 1
 
-        # Subfield #4: PSR Plot Runlength
+        # Subfield #4: PSR Plot Runlength (0.044 * N)
         if PRL and octet_index < len(packet_bytes):
-            prl_octet = packet_bytes[octet_index]
-            prl_value = prl_octet  # Valor binario de PRL
-            radar_plot.append(prl_value * 0.044)
+            prl_value = packet_bytes[octet_index]
+            radar_plot.append(prl_value * 0.044)  # Convertir a microsegundos
             octet_index += 1
 
-        # Subfield #5: PSR Amplitude
+        # Subfield #5: PSR Amplitude (en complemento A2)
         if PAM and octet_index < len(packet_bytes):
-            pam_octet = packet_bytes[octet_index]
-            pam_value = pam_octet  # Valor binario de PAM
-            radar_plot.append(pam_value)
+            pam_value = packet_bytes[octet_index]
+            if pam_value & 0b10000000:  # Si el bit de signo está activo
+                pam_value = pam_value - 256  # Convertir a negativo (complemento A2)
+            radar_plot.append(pam_value)  # Valor en dBm
             octet_index += 1
 
-        # Subfield #6: Difference in Range between PSR and SSR plot
+        # Subfield #6: Difference in Range between PSR and SSR plot (en complemento A2)
         if RPD and octet_index < len(packet_bytes):
-            rpd_octet = packet_bytes[octet_index]
-            rpd_value = rpd_octet  # Valor binario de RPD
-            radar_plot.append(rpd_value)
+            rpd_value = packet_bytes[octet_index]
+            if rpd_value & 0b10000000:  # Si el bit de signo está activo
+                rpd_value = rpd_value - 256  # Convertir a negativo (complemento A2)
+            radar_plot.append(rpd_value / 256.0)  # Convertir a NM
             octet_index += 1
 
-        # Subfield #7: Difference in Azimuth between PSR and SSR plot
+        # Subfield #7: Difference in Azimuth between PSR and SSR plot (en complemento A2)
         if APD and octet_index < len(packet_bytes):
-            apd_octet = packet_bytes[octet_index]
-            apd_value = apd_octet  # Valor binario de APD
-            radar_plot.append(apd_value)
+            apd_value = packet_bytes[octet_index]
+            if apd_value & 0b10000000:  # Si el bit de signo está activo
+                apd_value = apd_value - 256  # Convertir a negativo (complemento A2)
+            radar_plot.append(apd_value * (360.0 / 16384.0))  # Convertir a grados
             octet_index += 1
-        
-        current_octet = packet_bytes[octet_index]
-        FX = current_octet & 0b1  # Verificar si hay más extensiones
 
     return radar_plot
-#preguntar lo del complemento A2 (acabar esto!)
-

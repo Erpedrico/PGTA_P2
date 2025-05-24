@@ -7,7 +7,6 @@ from functions.add_file import add_file
 from functions.filter import aplicar_filtros
 from functions.extract_data_fields import extract_data_fields
 from functions.extract_data import extraer_datos
-from functions.Posiciones import process_dataframe_to_trajectories
 import pandas as pd
 from tkinter import simpledialog
 import csv
@@ -430,94 +429,43 @@ def aplicar_filtros_actuales():
 #Actualizacion de la tabla si hay filtrado
      
 def actualizar_tabla(df):
+    # Limpiar tabla existente
     for item in tabla.get_children():
         tabla.delete(item)
     
+    # Mapeo de columnas
+    columnas_esperadas = [
+        "Paquete", "CAT", "LEN", "SAC", "SIC", "TIME", "LAT", "LON", "H", 
+        "TYP020", "SIM020", "RDP020", "SPI020", "RAB020", "Validated",
+        "Garbled", "CodeSource", "Validated_FL", "Garbled_FL", "FL", "FL_Corrected", 
+        "Mode3ACode", "Address", "ID", "BDS", "TRACK NUMBER", "TRACK STATUS", 
+        "X", "Y", "GS", "GS_KT", "HEADING", "COM", "STAT", "SI", "MSSC", 
+        "ARC", "AIC", "B1A", "B1B", "RHO", "THETA",
+        # Columnas MCP y BDS (Data Item 250)
+        "MCP_STATUS", "MCP_ALT", "FMS_STATUS", "FMS_ALT", "BP_STATUS", "BP_VALUE",
+        "MODE_STATUS", "VNAV", "ALTHOLD", "APP", "TARGETALT_STATUS", "TARGETALT_SOURCE",
+        "ROLL_STATUS", "ROLL_ANGLE", "TRACK_STATUS", "TRUE_TRACK", "GROUNDSPEED_STATUS", 
+        "GROUNDSPEED", "TRACKRATE_STATUS", "TRACK_RATE", "AIRSPEED_STATUS", "TRUE_AIRSPEED",
+        "HEADING_STATUS", "MAG_HEADING", "IAS_STATUS", "IAS", "MACH_STATUS", "MACH",
+        "BARO_RATE_STATUS", "BARO_RATE", "INERTIAL_VERT_STATUS", "INERTIAL_VERT_VEL"
+    ]
+    
+    # Insertar cada fila con el mapeo correcto
     for _, row in df.iterrows():
-        valores =[
-            row.get("Paquete", ""),
-            row.get("CAT", ""),
-            row.get("LEN", ""),
-            row.get("SAC", ""),
-            row.get("SIC", ""),
-            row.get("TIME", ""),
-            row.get("LAT", ""),
-            row.get("LON", ""),
-            row.get("H", ""),
-            row.get("TYP020",""),
-            row.get("SIM020", ""),
-            row.get("RDP020", ""),
-            row.get("SPI020", ""),
-            row.get("RAB020", ""),
-            row.get("Validated", ""),
-            row.get("Garbled", ""),
-            row.get("CodeSource", ""),
-            row.get("Validated_FL", ""),
-            row.get("Garbled_FL", ""),
-            row.get("FL", ""),
-            row.get("FL_Corrected",""),
-            row.get("Mode3ACode", ""),
-            row.get("Address", ""),
-            row.get("ID", ""),
-            row.get("BDS", ""),
-            row.get("TRACK NUMBER", ""),
-            row.get("TRACK STATUS", ""),
-            row.get("X", ""),
-            row.get("Y", ""),
-            row.get("GS", ""),
-            row.get("GS_KT", ""),
-            row.get("HEADING", ""),
-            row.get("LAT", ""),
-            row.get("LON", ""),
-            row.get("H", ""),
-            row.get("COM", ""),
-            row.get("STAT", ""),
-            row.get("SI", ""),
-            row.get("MSSC", ""),
-            row.get("ARC", ""),
-            row.get("AIC", ""),
-            row.get("B1A", ""),
-            row.get("B1B", ""),
-            row.get("RHO", ""),
-            row.get("THETA", ""),
-            # Columnas del Data Item 250 
-            row.get("BDS_REP", ""),
-            # BDS 4.0
-            row.get("MCP_STATUS", ""),
-            row.get("MCP_ALT", ""),
-            row.get("FMS_STATUS", ""),
-            row.get("FMS_ALT", ""),
-            row.get("BP_STATUS", ""),
-            row.get("BP_VALUE", ""),
-            row.get("MODE_STATUS", ""),
-            row.get("VNAV", ""),
-            row.get("ALTHOLD", ""),
-            row.get("APP", ""),
-            row.get("TARGETALT_STATUS", ""),
-            row.get("TARGETALT_SOURCE", ""),
-            # BDS 5.0
-            row.get("ROLL_STATUS", ""),
-            row.get("ROLL_ANGLE", ""),
-            row.get("TRACK_STATUS", ""),
-            row.get("TRUE_TRACK", ""),
-            row.get("GROUNDSPEED_STATUS", ""),
-            row.get("GROUNDSPEED", ""),
-            row.get("TRACKRATE_STATUS", ""),
-            row.get("TRACK_RATE", ""),
-            row.get("AIRSPEED_STATUS", ""),
-            row.get("TRUE_AIRSPEED", ""),
-            # BDS 6.0
-            row.get("HEADING_STATUS", ""),
-            row.get("MAG_HEADING", ""),
-            row.get("IAS_STATUS", ""),
-            row.get("IAS", ""),
-            row.get("MACH_STATUS", ""),
-            row.get("MACH", ""),
-            row.get("BARO_RATE_STATUS", ""),
-            row.get("BARO_RATE", ""),
-            row.get("INERTIAL_VERT_STATUS", ""),
-            row.get("INERTIAL_VERT_VEL", "")          
-        ]
+        valores = []
+        
+        # Mapear cada columna 
+        for columna in columnas_esperadas:
+            # Obtener el valor de la columna, usando "" si no existe
+            valor = row.get(columna, "")
+            
+            # Convertir None a string vacío para evitar problemas de visualización  
+            if valor is None or str(valor).lower() == 'nan':
+                valor = ""
+            
+            valores.append(str(valor))
+        
+        # Insertar la fila en la tabla
         tabla.insert("", "end", values=valores)
 
 # Botón de filtros
@@ -577,7 +525,7 @@ def reset_filtros():
         on_complete=reset_completado
     )
 
-# Update the reset button's command
+# Update 
 btn_reset = ctk.CTkButton(
     btn_frame,
     text="Resetear Filtros",

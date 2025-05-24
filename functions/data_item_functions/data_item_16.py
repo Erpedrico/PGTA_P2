@@ -1,5 +1,3 @@
-
-
 def data_item_16(packet):
     mensajes = []
 

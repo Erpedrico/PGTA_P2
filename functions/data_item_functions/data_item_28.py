@@ -53,8 +53,8 @@ def data_item_28(packet) -> dict:
             lat = int.from_bytes(lat_bytes, byteorder='big', signed=True) * 2.145767e-05
             lon = int.from_bytes(lon_bytes, byteorder='big', signed=True) * 2.145767e-05
 
-            result["Latitude"] = lat
-            result["Longitude"] = lon
+            result["Latitude"] = round(lat,6)
+            result["Longitude"] = round(lon,6)
 
             print("---------------------------------------------Estamos aqui 1------------------------------------------------")
             print(result)

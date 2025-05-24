@@ -73,30 +73,41 @@ class MapaViewer:
                 }}
 
                 function updateMarkers(map) {{
+                    // Limpiar marcadores existentes
                     markers.forEach(m => map.removeLayer(m));
                     markers = [];
 
-                    const second = seconds[currentIndex];
-                    const group = data[second];
-                    document.getElementById("time-label").innerText = formatSecond(parseInt(second));
+                    const currentSecond = parseInt(seconds[currentIndex]);
+                    const startSecond = currentSecond - 3;
 
-                    group.forEach(info => {{
-                        const htmlIcon = L.divIcon({{
-                            html: `
-                                <div style="text-align: center;">
-                                    <img src="https://cdn-icons-png.flaticon.com/128/723/723955.png" style="width: 32px; height: 32px;"><br>
-                                    <span style="font-size: 12px; color: black;">${{info.address}}</span>
-                                </div>
-                            `,
-                            iconSize: [32, 40],
-                            iconAnchor: [16, 16],
-                            className: ""
-                        }});
-                        const marker = L.marker([info.lat, info.lon], {{ icon: htmlIcon }}).addTo(map);
-                        marker.bindPopup(info.popup);
-                        markers.push(marker);
-                    }});
+                    // Mostrar desde (current - 3) hasta current
+                    for (let i = 0; i < seconds.length; i++) {{
+                        const sec = parseInt(seconds[i]);
+                        if (sec >= startSecond && sec <= currentSecond) {{
+                            const group = data[seconds[i]];
+                            group.forEach(info => {{
+                                const htmlIcon = L.divIcon({{
+                                    html: `
+                                        <div style="text-align: center;">
+                                            <img src="https://cdn-icons-png.flaticon.com/128/723/723955.png" style="width: 32px; height: 32px;"><br>
+                                            <span style="font-size: 12px; color: black;">${{info.address}}</span>
+                                        </div>
+                                    `,
+                                    iconSize: [32, 40],
+                                    iconAnchor: [16, 16],
+                                    className: ""
+                                }});
+                                const marker = L.marker([info.lat, info.lon], {{ icon: htmlIcon }}).addTo(map);
+                                marker.bindPopup(info.popup);
+                                markers.push(marker);
+                            }});
+                        }}
+                    }}
+
+                    document.getElementById("time-label").innerText = formatSecond(currentSecond);
                 }}
+
+
 
                 function nextGroup() {{
                     if (currentIndex < seconds.length - 1) {{
